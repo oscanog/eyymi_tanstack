@@ -35,7 +35,7 @@ export function useBottomSheetDrag({
 
   const dragStateRef = useRef<DragState | null>(null)
   const translateYRef = useRef(translateY)
-  const resetDragTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null)
+  const resetDragTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
     translateYRef.current = translateY

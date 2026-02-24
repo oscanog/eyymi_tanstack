@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Navigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect, useRef } from 'react'
 import { convexMutation } from '@/lib/convex'
 import { storage } from '@/lib/storage'

@@ -77,7 +77,7 @@ function SessionHomePage() {
         </Button>
 
         <Button
-          variant="outline"
+          variant="tertiary"
           onClick={() => navigate({ to: '/session/list' })}
           className="w-full"
         >

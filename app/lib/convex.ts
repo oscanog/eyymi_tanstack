@@ -9,6 +9,11 @@
 
 const CONVEX_URL = import.meta.env.VITE_CONVEX_URL || 'https://hushed-dog-982.convex.cloud'
 
+// Accept either "module:function" or "module/function" and send Convex HTTP API format.
+function normalizeConvexPath(path: string): string {
+  return path.includes(':') ? path.replace(':', '/') : path
+}
+
 interface ConvexRequest {
   path: string
   args: Record<string, unknown>
@@ -162,6 +167,7 @@ export async function convexQuery<T>(
   retryConfig?: RetryConfig,
   requestOptions?: RequestOptions
 ): Promise<T> {
+  const normalizedPath = normalizeConvexPath(path)
   return withRetry(async () => {
     const response = await fetch(`${CONVEX_URL}/api/query`, {
       method: 'POST',
@@ -169,7 +175,7 @@ export async function convexQuery<T>(
         'Content-Type': 'application/json',
       },
       signal: requestOptions?.signal,
-      body: JSON.stringify({ path, args } satisfies ConvexRequest),
+      body: JSON.stringify({ path: normalizedPath, args } satisfies ConvexRequest),
     })
 
     const responseText = await response.text()
@@ -188,13 +194,13 @@ export async function convexQuery<T>(
     if (data.status === 'error') {
       const error = decodeConvexError(data)
       if (import.meta.env.DEV) {
-        console.error('[convexQuery] query failed', { path, args, response: data, parsedMessage: error.message })
+        console.error('[convexQuery] query failed', { path: normalizedPath, args, response: data, parsedMessage: error.message })
       }
       throw error
     }
 
     return data.value as T
-  }, `query:${path}`, retryConfig, requestOptions)
+  }, `query:${normalizedPath}`, retryConfig, requestOptions)
 }
 
 /**
@@ -206,6 +212,7 @@ export async function convexMutation<T>(
   retryConfig?: RetryConfig,
   requestOptions?: RequestOptions
 ): Promise<T> {
+  const normalizedPath = normalizeConvexPath(path)
   return withRetry(async () => {
     const response = await fetch(`${CONVEX_URL}/api/mutation`, {
       method: 'POST',
@@ -213,7 +220,7 @@ export async function convexMutation<T>(
         'Content-Type': 'application/json',
       },
       signal: requestOptions?.signal,
-      body: JSON.stringify({ path, args } satisfies ConvexRequest),
+      body: JSON.stringify({ path: normalizedPath, args } satisfies ConvexRequest),
     })
 
     const responseText = await response.text()
@@ -232,13 +239,13 @@ export async function convexMutation<T>(
     if (data.status === 'error') {
       const error = decodeConvexError(data)
       if (import.meta.env.DEV) {
-        console.error('[convexMutation] mutation failed', { path, args, response: data, parsedMessage: error.message })
+        console.error('[convexMutation] mutation failed', { path: normalizedPath, args, response: data, parsedMessage: error.message })
       }
       throw error
     }
 
     return data.value as T
-  }, `mutation:${path}`, retryConfig, requestOptions)
+  }, `mutation:${normalizedPath}`, retryConfig, requestOptions)
 }
 
 /**
@@ -250,6 +257,7 @@ export async function convexAction<T>(
   retryConfig?: RetryConfig,
   requestOptions?: RequestOptions
 ): Promise<T> {
+  const normalizedPath = normalizeConvexPath(path)
   return withRetry(async () => {
     const response = await fetch(`${CONVEX_URL}/api/action`, {
       method: 'POST',
@@ -257,7 +265,7 @@ export async function convexAction<T>(
         'Content-Type': 'application/json',
       },
       signal: requestOptions?.signal,
-      body: JSON.stringify({ path, args } satisfies ConvexRequest),
+      body: JSON.stringify({ path: normalizedPath, args } satisfies ConvexRequest),
     })
 
     const responseText = await response.text()
@@ -276,13 +284,13 @@ export async function convexAction<T>(
     if (data.status === 'error') {
       const error = decodeConvexError(data)
       if (import.meta.env.DEV) {
-        console.error('[convexAction] action failed', { path, args, response: data, parsedMessage: error.message })
+        console.error('[convexAction] action failed', { path: normalizedPath, args, response: data, parsedMessage: error.message })
       }
       throw error
     }
 
     return data.value as T
-  }, `action:${path}`, retryConfig, requestOptions)
+  }, `action:${normalizedPath}`, retryConfig, requestOptions)
 }
 
 /**
@@ -295,6 +303,7 @@ export function subscribeConvexQuery<T>(
   onError: (error: Error) => void,
   interval: number = 2000
 ): () => void {
+  const normalizedPath = normalizeConvexPath(path)
   let isActive = true
   let consecutiveErrors = 0
   const maxConsecutiveErrors = 5
@@ -306,7 +315,7 @@ export function subscribeConvexQuery<T>(
       const response = await fetch(`${CONVEX_URL}/api/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path, args } satisfies ConvexRequest),
+        body: JSON.stringify({ path: normalizedPath, args } satisfies ConvexRequest),
       })
 
       if (response.status === 304) {
@@ -324,7 +333,7 @@ export function subscribeConvexQuery<T>(
       if (data.status === 'error') {
         const error = decodeConvexError(data)
         if (import.meta.env.DEV) {
-          console.error('[subscribeConvexQuery] query failed', { path, args, response: data, parsedMessage: error.message })
+          console.error('[subscribeConvexQuery] query failed', { path: normalizedPath, args, response: data, parsedMessage: error.message })
         }
         throw error
       }
