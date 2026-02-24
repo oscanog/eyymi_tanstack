@@ -4,14 +4,24 @@
  * Uses the public Convex HTTP API instead of generated types.
  * This makes it easier for Android devs to understand and replicate.
  *
- * Convex Production URL: https://hushed-dog-982.convex.cloud
+ * Convex URL must be provided via VITE_CONVEX_URL (.env.local)
  */
 
-const CONVEX_URL = import.meta.env.VITE_CONVEX_URL || 'https://hushed-dog-982.convex.cloud'
+const CONVEX_URL = import.meta.env.VITE_CONVEX_URL
+
+function getConvexUrl(): string {
+  if (!CONVEX_URL) {
+    throw new Error(
+      'Missing VITE_CONVEX_URL. Create d:\\eyymi_tanstack\\.env.local and set VITE_CONVEX_URL to your eyymi Convex deployment URL.'
+    )
+  }
+  return CONVEX_URL
+}
 
 // Accept either "module:function" or "module/function" and send Convex HTTP API format.
+// Convex HTTP API expects "module:function".
 function normalizeConvexPath(path: string): string {
-  return path.includes(':') ? path.replace(':', '/') : path
+  return path.includes('/') ? path.replace('/', ':') : path
 }
 
 interface ConvexRequest {
@@ -168,8 +178,9 @@ export async function convexQuery<T>(
   requestOptions?: RequestOptions
 ): Promise<T> {
   const normalizedPath = normalizeConvexPath(path)
+  const convexUrl = getConvexUrl()
   return withRetry(async () => {
-    const response = await fetch(`${CONVEX_URL}/api/query`, {
+    const response = await fetch(`${convexUrl}/api/query`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -213,8 +224,9 @@ export async function convexMutation<T>(
   requestOptions?: RequestOptions
 ): Promise<T> {
   const normalizedPath = normalizeConvexPath(path)
+  const convexUrl = getConvexUrl()
   return withRetry(async () => {
-    const response = await fetch(`${CONVEX_URL}/api/mutation`, {
+    const response = await fetch(`${convexUrl}/api/mutation`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -258,8 +270,9 @@ export async function convexAction<T>(
   requestOptions?: RequestOptions
 ): Promise<T> {
   const normalizedPath = normalizeConvexPath(path)
+  const convexUrl = getConvexUrl()
   return withRetry(async () => {
-    const response = await fetch(`${CONVEX_URL}/api/action`, {
+    const response = await fetch(`${convexUrl}/api/action`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -304,6 +317,7 @@ export function subscribeConvexQuery<T>(
   interval: number = 2000
 ): () => void {
   const normalizedPath = normalizeConvexPath(path)
+  const convexUrl = getConvexUrl()
   let isActive = true
   let consecutiveErrors = 0
   const maxConsecutiveErrors = 5
@@ -312,7 +326,7 @@ export function subscribeConvexQuery<T>(
     if (!isActive) return
 
     try {
-      const response = await fetch(`${CONVEX_URL}/api/query`, {
+      const response = await fetch(`${convexUrl}/api/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: normalizedPath, args } satisfies ConvexRequest),

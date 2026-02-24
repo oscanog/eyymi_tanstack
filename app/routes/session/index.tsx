@@ -40,8 +40,8 @@ function SessionHomePage() {
   return (
     <div className="flex flex-col items-center justify-center px-6 pt-8">
       {/* Logo */}
-      <div className="w-20 h-20 rounded-full bg-[#FF035B] flex items-center justify-center mb-6">
-        <span className="text-2xl font-bold text-white">M2M</span>
+      <div className="w-20 h-20 rounded-full bg-[var(--color-rose)] flex items-center justify-center mb-6">
+        <span className="text-xl font-bold text-white">eyymi</span>
       </div>
 
       {/* Title */}

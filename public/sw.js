@@ -1,5 +1,5 @@
-// Man2Man Service Worker
-const CACHE_NAME = "man2man-v2";
+// EYYMI Service Worker
+const CACHE_NAME = "eyymi-v1";
 
 // Keep precache minimal and guaranteed to exist to avoid install failures.
 const STATIC_ASSETS = [

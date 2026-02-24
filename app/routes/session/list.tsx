@@ -72,8 +72,8 @@ function SessionListPage() {
   // Loading check
   if (isAuthenticated === null) {
     return (
-      <div className="min-h-screen bg-[#0A1628] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-white/30 border-t-[#FF035B] rounded-full" />
+      <div className="min-h-screen bg-[var(--color-navy-bg)] flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-white/30 border-t-[var(--color-rose)] rounded-full" />
       </div>
     )
   }
@@ -83,20 +83,20 @@ function SessionListPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A1628]">
+    <div className="min-h-screen bg-[var(--color-navy-bg)]">
       {/* Header */}
       <div className="flex items-center p-4 border-b border-white/10 gap-3">
         <button onClick={() => navigate({ to: '/session' })} className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10">
           <ArrowLeft className="w-6 h-6 text-white" />
         </button>
         <h1 className="text-xl font-bold text-white">Active Sessions</h1>
-        <div className="ml-auto bg-[#141D2B] border border-white/10 rounded-xl p-1 flex items-center gap-1">
+        <div className="ml-auto bg-[var(--color-navy-surface)] border border-white/10 rounded-xl p-1 flex items-center gap-1">
           <button
             type="button"
             onClick={() => setSortOrder('latest')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
               sortOrder === 'latest'
-                ? 'bg-[#FF035B] text-white'
+                ? 'bg-[var(--color-rose)] text-white'
                 : 'text-white/70 hover:text-white hover:bg-white/10'
             }`}
             aria-pressed={sortOrder === 'latest'}
@@ -108,7 +108,7 @@ function SessionListPage() {
             onClick={() => setSortOrder('oldest')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
               sortOrder === 'oldest'
-                ? 'bg-[#FF035B] text-white'
+                ? 'bg-[var(--color-rose)] text-white'
                 : 'text-white/70 hover:text-white hover:bg-white/10'
             }`}
             aria-pressed={sortOrder === 'oldest'}
@@ -122,7 +122,7 @@ function SessionListPage() {
       <div className="p-4">
         {isInitialLoading ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin w-8 h-8 border-2 border-white/30 border-t-[#FF035B] rounded-full" />
+            <div className="animate-spin w-8 h-8 border-2 border-white/30 border-t-[var(--color-rose)] rounded-full" />
           </div>
         ) : liveError && sessions.length === 0 ? (
           <div className="text-center py-12">
@@ -147,9 +147,9 @@ function SessionListPage() {
               <button
                 key={session._id}
                 onClick={() => handleSessionClick(session)}
-                className="w-full bg-[#141D2B] rounded-2xl p-4 flex items-center gap-4 text-left hover:bg-[#1E2A3C] transition-colors"
+                className="w-full bg-[var(--color-navy-surface)] rounded-2xl p-4 flex items-center gap-4 text-left hover:bg-[var(--color-navy-elevated)] transition-colors"
               >
-                <div className="w-12 h-12 rounded-full bg-[#FF035B] flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-[var(--color-rose)] flex items-center justify-center flex-shrink-0">
                   <User className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1">

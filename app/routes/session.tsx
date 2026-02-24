@@ -324,8 +324,8 @@ function SessionLayout() {
   // Show loading while checking auth
   if (authStatus === 'checking') {
     return (
-      <div className="min-h-screen bg-[#0A1628] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-white/30 border-t-[#FF035B] rounded-full" />
+      <div className="min-h-screen bg-[var(--color-navy-bg)] flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-white/30 border-t-[var(--color-rose)] rounded-full" />
       </div>
     )
   }
@@ -340,7 +340,7 @@ function SessionLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A1628]">
+    <div className="min-h-screen bg-[var(--color-navy-bg)]">
       <IdentityRecoveryDialog
         isOpen={Boolean(identityRecovery)}
         lastUsername={identityRecovery?.lastUsername ?? null}
@@ -398,7 +398,7 @@ function SessionLayout() {
           </button>
 
           {shouldShowHostLocation && (
-            <div className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#141D2B]/90 px-3 py-2 backdrop-blur-sm">
+            <div className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[var(--color-navy-surface)] px-3 py-2 backdrop-blur-sm">
               <div className="flex items-center gap-2">
                 <MapPin className="h-3.5 w-3.5 shrink-0 text-white/60" />
                 <p className="truncate text-sm text-white/90">{hostLocationLabel}</p>

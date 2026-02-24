@@ -244,7 +244,7 @@ function CreateSessionPage() {
 
     const joinUrl = `${window.location.origin}/session/join?code=${code}`
     const shareData = {
-      title: 'Join my Man2Man session',
+      title: 'Join my eyymi - ❤️ at your hands session',
       // Keep a single canonical URL in text to avoid duplicates on some share targets.
       text: `Join my location sharing session with code: ${code}\n${joinUrl}`,
     }
@@ -278,8 +278,8 @@ function CreateSessionPage() {
   // Loading check
   if (isAuthenticated === null) {
     return (
-      <div className="min-h-screen bg-[#0A1628] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-white/30 border-t-[#FF035B] rounded-full" />
+      <div className="min-h-screen bg-[var(--color-navy-bg)] flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-white/30 border-t-[var(--color-rose)] rounded-full" />
       </div>
     )
   }
@@ -291,7 +291,7 @@ function CreateSessionPage() {
   // State 1: Initial
   if (!session) {
     return (
-      <div className="min-h-screen bg-[#0A1628] flex flex-col items-center justify-center px-6">
+      <div className="min-h-screen bg-[var(--color-navy-bg)] flex flex-col items-center justify-center px-6">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-white mb-2">
             {isLoading ? 'Creating session...' : 'Create Session'}
@@ -326,8 +326,8 @@ function CreateSessionPage() {
       {/* Map - Client only */}
       {isMapReady && (
         <Suspense fallback={
-          <div className="h-full w-full bg-[#0A1628] flex items-center justify-center">
-            <Loader2 className="w-8 h-8 animate-spin text-[#FF035B]" />
+          <div className="h-full w-full bg-[var(--color-navy-bg)] flex items-center justify-center">
+            <Loader2 className="w-8 h-8 animate-spin text-[var(--color-rose)]" />
           </div>
         }>
           <Map 
@@ -345,7 +345,7 @@ function CreateSessionPage() {
             <span className="text-white text-sm font-medium">Partner connected!</span>
           </div>
         ) : (
-          <div className="bg-[#141D2B]/90 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2 shadow-lg">
+          <div className="bg-[var(--color-navy-surface)] backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2 shadow-lg">
             <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
             <span className="text-yellow-500 text-sm font-medium">Waiting for partner...</span>
           </div>

@@ -8,9 +8,9 @@ interface PWAMetaProps {
 }
 
 export function PWAMeta({
-  title = 'Man2Man Location Sharing',
+  title = 'eyymi - ❤️ at your hands',
   description = 'Real-time location sharing app for staying connected with friends and family',
-  themeColor = '#FF035B',
+  themeColor = '#14B8A6',
   statusBarStyle = 'black-translucent',
 }: PWAMetaProps) {
   const meta = [
@@ -83,7 +83,7 @@ export function PWAMeta({
     },
     {
       property: 'og:site_name',
-      content: 'Man2Man',
+      content: 'eyymi - ❤️ at your hands',
     },
     
     // Twitter Card
@@ -189,9 +189,9 @@ export function PWAMeta({
 
 // Alternative: Hook-based approach for use in route head configuration
 export function createPWAMeta({
-  title = 'Man2Man Location Sharing',
+  title = 'eyymi - ❤️ at your hands',
   description = 'Real-time location sharing app for staying connected with friends and family',
-  themeColor = '#FF035B',
+  themeColor = '#14B8A6',
   statusBarStyle = 'black-translucent',
 }: PWAMetaProps = {}) {
   return {

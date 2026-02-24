@@ -20,10 +20,10 @@ export const Route = createRootRoute({
       },
       {
         name: 'theme-color',
-        content: '#0A1628',
+        content: '#090C12',
       },
       {
-        title: 'Man2Man Location Sharing',
+        title: 'eyymi - ❤️ at your hands',
       },
     ],
     links: [
@@ -67,7 +67,7 @@ function RootDocument() {
         <PWAMeta />
       </head>
       <body className="bg-navy-900 text-white antialiased">
-        <div className="max-w-[430px] mx-auto min-h-screen bg-[#0A1628]">
+        <div className="max-w-[430px] mx-auto min-h-screen bg-[var(--color-navy-bg)]">
           <Outlet />
         </div>
         {import.meta.env.DEV ? (
@@ -91,15 +91,15 @@ function RootDocument() {
 
 function NotFoundPage() {
   return (
-    <main className="min-h-screen bg-[#0A1628] flex flex-col items-center justify-center px-6 text-center">
-      <p className="text-6xl font-bold text-[#FF035B]">404</p>
+    <main className="min-h-screen bg-[var(--color-navy-bg)] flex flex-col items-center justify-center px-6 text-center">
+      <p className="text-6xl font-bold text-[var(--color-rose)]">404</p>
       <h1 className="mt-4 text-2xl font-semibold text-white">Page not found</h1>
       <p className="mt-2 max-w-sm text-white/70">
         The page you are looking for does not exist or has moved.
       </p>
       <Link
         to="/"
-        className="mt-8 inline-flex rounded-lg bg-[#FF035B] px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        className="mt-8 inline-flex rounded-lg bg-[var(--color-rose)] px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
       >
         Go to home
       </Link>

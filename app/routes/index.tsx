@@ -110,21 +110,21 @@ function OnboardingPage() {
   // Show loading while checking auth
   if (isChecking) {
     return (
-      <div className="min-h-screen bg-[#0A1628] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-white/30 border-t-[#FF035B] rounded-full" />
+      <div className="min-h-screen bg-[var(--color-navy-bg)] flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-white/30 border-t-[var(--color-rose)] rounded-full" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0A1628] flex flex-col items-center justify-center px-6">
+    <div className="min-h-screen bg-[var(--color-navy-bg)] flex flex-col items-center justify-center px-6">
       {/* Logo */}
-      <div className="w-20 h-20 rounded-full bg-[#FF035B] flex items-center justify-center mb-6">
-        <span className="text-2xl font-bold text-white">M2M</span>
+      <div className="w-20 h-20 rounded-full bg-[var(--color-rose)] flex items-center justify-center mb-6">
+        <span className="text-xl font-bold text-white">eyymi</span>
       </div>
 
       {/* Title */}
-      <h1 className="text-3xl font-bold text-white mb-2">Man2Man</h1>
+      <h1 className="text-3xl font-bold text-white mb-2">eyymi - ❤️ at your hands</h1>
       <p className="text-white/60 text-center mb-12 max-w-xs">
         Share your location with someone you trust
       </p>

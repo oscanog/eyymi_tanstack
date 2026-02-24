@@ -424,8 +424,8 @@ function JoinSessionPage() {
 
   if (isAuthenticated === null || isBootstrappingIdentity) {
     return (
-      <div className="min-h-screen bg-[#0A1628] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-white/30 border-t-[#FF035B] rounded-full" />
+      <div className="min-h-screen bg-[var(--color-navy-bg)] flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-white/30 border-t-[var(--color-rose)] rounded-full" />
       </div>
     )
   }
@@ -442,11 +442,11 @@ function JoinSessionPage() {
     if (isCodeComplete) {
       return 'border-green-500 focus:border-green-500 focus:ring-2 focus:ring-green-500/30'
     }
-    return 'border-transparent focus:border-[#FF035B]'
+    return 'border-transparent focus:border-[var(--color-rose)]'
   }
 
   return (
-    <div className="relative min-h-screen bg-[#0A1628] flex flex-col items-center justify-center px-6">
+    <div className="relative min-h-screen bg-[var(--color-navy-bg)] flex flex-col items-center justify-center px-6">
       {showUsernameModal && (
         <>
           <button
@@ -562,7 +562,7 @@ function JoinSessionPage() {
               disabled={isLoading || isVerifying || showUsernameModal || isSavingUsername}
               className={`
                 w-12 h-12 text-center text-xl font-bold rounded-xl
-                bg-[#141D2B] text-white
+                bg-[var(--color-navy-surface)] text-white
                 border-2 transition-all duration-200
                 focus:outline-none
                 disabled:opacity-50 disabled:cursor-not-allowed
@@ -583,7 +583,7 @@ function JoinSessionPage() {
 
         {isVerifying && (
           <div className="mb-6 text-center">
-            <div className="animate-spin w-6 h-6 border-2 border-white/30 border-t-[#FF035B] rounded-full mx-auto mb-2" />
+            <div className="animate-spin w-6 h-6 border-2 border-white/30 border-t-[var(--color-rose)] rounded-full mx-auto mb-2" />
             <p className="text-white/60 text-sm">Verifying session...</p>
           </div>
         )}

@@ -1,34 +1,44 @@
 @import "tailwindcss";
 
 /* ============================================
-   Man2Man Design System - Mobile First
+   EYYMI Design System - Aurora Mint + Midnight Neon
    ============================================ */
 
-/* CSS Variables for Man2Man Color Palette */
+/* Hybrid token set:
+   - Aurora Mint for primary/trust accents
+   - Midnight Neon for dark-first surfaces and text
+*/
 :root {
   /* Primary Colors */
-  --color-rose: #FF035B;
-  --color-rose-light: #FF2B75;
-  --color-rose-dark: #D6004A;
+  --color-rose: #14B8A6;
+  --color-rose-light: #2DD4BF;
+  --color-rose-dark: #0F9F90;
   
-  /* Navy Colors */
-  --color-navy-bg: #0A1628;
-  --color-navy-surface: #141D2B;
-  --color-navy-elevated: #1E2837;
+  /* Midnight Neon (dark-first neutrals) */
+  --color-navy-bg: #090C12;
+  --color-navy-surface: #111827;
+  --color-navy-elevated: #1A2438;
   
   /* Semantic Colors */
-  --color-success: #00C853;
-  --color-warning: #FFB300;
-  --color-error: #FF1744;
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
   
   /* Text Colors */
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: #A0AEC0;
-  --color-text-muted: #64748B;
+  --color-text-primary: #EAF2FF;
+  --color-text-secondary: #A8B7D1;
+  --color-text-muted: #7C8DAA;
   
   /* Border Colors */
-  --color-border: rgba(255, 255, 255, 0.1);
-  --color-border-focus: #FF035B;
+  --color-border: rgba(234, 242, 255, 0.12);
+  --color-border-focus: #14B8A6;
+
+  /* Generic aliases for future migration away from legacy variable names */
+  --color-bg-canvas: var(--color-navy-bg);
+  --color-bg-surface: var(--color-navy-surface);
+  --color-bg-elevated: var(--color-navy-elevated);
+  --color-primary: var(--color-rose);
+  --color-primary-pressed: var(--color-rose-dark);
 
   /* Drawer (online users sidebar) */
   --color-drawer-surface: rgba(20, 29, 43, 0.95);
@@ -38,14 +48,14 @@
   --color-drawer-backdrop: rgba(6, 10, 17, 0.45);
   --color-drawer-item-bg: rgba(255, 255, 255, 0.04);
   --color-drawer-avatar-bg: rgba(255, 255, 255, 0.08);
-  --color-drawer-self-bg: rgba(255, 3, 91, 0.16);
-  --color-drawer-self-border: rgba(255, 3, 91, 0.42);
+  --color-drawer-self-bg: rgba(20, 184, 166, 0.16);
+  --color-drawer-self-border: rgba(20, 184, 166, 0.42);
   --color-drawer-skeleton: rgba(255, 255, 255, 0.08);
   --color-drawer-muted-bg: rgba(255, 255, 255, 0.06);
   --color-drawer-error-bg: rgba(255, 23, 68, 0.16);
   --color-drawer-error-border: rgba(255, 23, 68, 0.42);
   --color-drawer-error-text: #ff97aa;
-  --color-drawer-accent-soft: rgba(255, 3, 91, 0.16);
+  --color-drawer-accent-soft: rgba(20, 184, 166, 0.16);
 
   /* Modal (session invite dialogs) */
   --color-modal-surface: rgba(20, 29, 43, 0.98);
@@ -70,18 +80,18 @@
   --color-onboard-suggestion-surface: rgba(30, 40, 55, 0.78);
   --color-onboard-suggestion-border: rgba(255, 255, 255, 0.18);
   --color-onboard-suggestion-text: #cbd5e1;
-  --color-onboard-suggestion-chip-bg: rgba(255, 3, 91, 0.14);
-  --color-onboard-suggestion-chip-text: #ff7fa9;
+  --color-onboard-suggestion-chip-bg: rgba(20, 184, 166, 0.14);
+  --color-onboard-suggestion-chip-text: #76f5e7;
 
   /* Live route visuals */
   --route-line-halo: rgba(244, 248, 255, 0.82);
-  --route-line-core: #00d4ff;
+  --route-line-core: #14b8a6;
   --route-chip-bg: rgba(12, 22, 39, 0.74);
   --route-chip-border: rgba(255, 255, 255, 0.24);
   --route-chip-text: #ffffff;
   --route-chip-muted: #b8c4d6;
-  --route-line-core-mine: #00d4ff;
-  --route-line-core-partner: #ff8a5b;
+  --route-line-core-mine: #14b8a6;
+  --route-line-core-partner: #ff4da6;
   --color-meeting-accent: #12b886;
   --color-meeting-marker: #ffb300;
   --color-meeting-dialog-border: rgba(18, 184, 134, 0.34);
@@ -89,18 +99,18 @@
   --color-meeting-input-border: rgba(255, 255, 255, 0.2);
   --color-meeting-suggestion-bg: rgba(255, 255, 255, 0.04);
   --color-meeting-suggestion-border: rgba(255, 255, 255, 0.18);
-  --color-meeting-fab-bg: rgba(15, 26, 45, 0.62);
+  --color-meeting-fab-bg: rgba(17, 24, 39, 0.7);
   --color-meeting-fab-border: rgba(255, 255, 255, 0.26);
   --color-meeting-fab-text: #f8fafc;
   --color-meeting-chip-bg: rgba(18, 184, 134, 0.16);
   --color-meeting-chip-border: rgba(18, 184, 134, 0.46);
   --color-meeting-chip-text: #d8fff2;
-  --color-camera-fab-bg: rgba(15, 26, 45, 0.45);
+  --color-camera-fab-bg: rgba(17, 24, 39, 0.52);
   --color-camera-fab-border: rgba(255, 255, 255, 0.24);
   --color-camera-fab-text: #f8fafc;
-  --color-camera-fab-active-bg: rgba(0, 212, 255, 0.22);
-  --color-camera-fab-active-border: rgba(0, 212, 255, 0.5);
-  --color-camera-fab-active-text: #c8f5ff;
+  --color-camera-fab-active-bg: rgba(20, 184, 166, 0.22);
+  --color-camera-fab-active-border: rgba(20, 184, 166, 0.5);
+  --color-camera-fab-active-text: #b6fff6;
   
   /* Spacing Scale (Mobile-first: 4px base) */
   --space-1: 4px;
