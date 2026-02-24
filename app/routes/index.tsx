@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect, useRef } from 'react'
 import { convexMutation } from '@/lib/convex'
+import { otpAuthStorage } from '@/lib/otpAuth'
 import { storage } from '@/lib/storage'
 import { parseSuggestedUsername, sanitizeUsernameInput, USERNAME_MIN_LENGTH } from '@/lib/username'
 import { Button } from '@/components/ui/Button'
@@ -45,6 +46,10 @@ function OnboardingPage() {
 
   // Check if already authenticated (client-side only)
   useEffect(() => {
+    if (!otpAuthStorage.hasValidSession()) {
+      navigate({ to: '/signin' })
+      return
+    }
     if (storage.isAuthenticated()) {
       navigate({ to: '/session' })
     } else {

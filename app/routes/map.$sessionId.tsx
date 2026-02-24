@@ -22,6 +22,7 @@ import { useMeetingPlaceSearch } from '@/hooks/useMeetingPlaceSearch'
 import { useMeetingRoutes } from '@/hooks/useMeetingRoutes'
 import { Button } from '@/components/ui/Button'
 import { convexMutation, convexQuery } from '@/lib/convex'
+import { otpAuthStorage } from '@/lib/otpAuth'
 import { useOnlineUsers } from '@/hooks/useOnlineUsers'
 import { storage } from '@/lib/storage'
 import { clearPendingJoinHandoff } from '@/lib/joinHandoff'
@@ -109,6 +110,11 @@ const EXIT_CONFIRMATION_COUNT = 2
 function MapPage() {
   const { sessionId } = useParams({ from: '/map/$sessionId' })
   const navigate = useNavigate()
+  const hasOtpAuth = otpAuthStorage.hasValidSession()
+
+  if (!hasOtpAuth) {
+    return <Navigate to="/signin" />
+  }
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [session, setSession] = useState<Session | null>(null)

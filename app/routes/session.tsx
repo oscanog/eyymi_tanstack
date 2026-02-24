@@ -12,6 +12,7 @@ import type { OnlineUser } from '@/hooks'
 import { useOnlineUsers } from '@/hooks/useOnlineUsers'
 import { useSessionInvites } from '@/hooks/useSessionInvites'
 import { convexMutation, convexQuery } from '@/lib/convex'
+import { otpAuthStorage } from '@/lib/otpAuth'
 import { storage } from '@/lib/storage'
 import {
   parseSuggestedUsername,
@@ -76,7 +77,7 @@ function SessionLayout() {
   const userId = identityRecovery ? null : storage.getUserId()
   const username = storage.getUsername()
   const shouldShowHostLocation = pathname === '/session/create'
-  const isJoinRoute = pathname.startsWith('/session/join')
+  const hasOtpAuth = otpAuthStorage.hasValidSession()
   const handledSessionIdRef = useRef<string | null>(null)
   const {
     incomingInvite,
@@ -321,6 +322,10 @@ function SessionLayout() {
     navigate({ to: '/' })
   }, [isRecoveringIdentity, navigate])
 
+  if (!hasOtpAuth) {
+    return <Navigate to="/signin" />
+  }
+
   // Show loading while checking auth
   if (authStatus === 'checking') {
     return (
@@ -332,10 +337,6 @@ function SessionLayout() {
 
   // Redirect if not authenticated
   if (authStatus === 'guest') {
-    if (isJoinRoute) {
-      return <Outlet />
-    }
-
     return <Navigate to="/" />
   }
 
