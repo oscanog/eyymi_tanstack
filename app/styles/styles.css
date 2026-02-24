@@ -1,0 +1,753 @@
+@import "tailwindcss";
+
+/* ============================================
+   Man2Man Design System - Mobile First
+   ============================================ */
+
+/* CSS Variables for Man2Man Color Palette */
+:root {
+  /* Primary Colors */
+  --color-rose: #FF035B;
+  --color-rose-light: #FF2B75;
+  --color-rose-dark: #D6004A;
+  
+  /* Navy Colors */
+  --color-navy-bg: #0A1628;
+  --color-navy-surface: #141D2B;
+  --color-navy-elevated: #1E2837;
+  
+  /* Semantic Colors */
+  --color-success: #00C853;
+  --color-warning: #FFB300;
+  --color-error: #FF1744;
+  
+  /* Text Colors */
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #A0AEC0;
+  --color-text-muted: #64748B;
+  
+  /* Border Colors */
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-border-focus: #FF035B;
+
+  /* Drawer (online users sidebar) */
+  --color-drawer-surface: rgba(20, 29, 43, 0.95);
+  --color-drawer-border: rgba(255, 255, 255, 0.14);
+  --color-drawer-text: #ffffff;
+  --color-drawer-text-muted: #a0aec0;
+  --color-drawer-backdrop: rgba(6, 10, 17, 0.45);
+  --color-drawer-item-bg: rgba(255, 255, 255, 0.04);
+  --color-drawer-avatar-bg: rgba(255, 255, 255, 0.08);
+  --color-drawer-self-bg: rgba(255, 3, 91, 0.16);
+  --color-drawer-self-border: rgba(255, 3, 91, 0.42);
+  --color-drawer-skeleton: rgba(255, 255, 255, 0.08);
+  --color-drawer-muted-bg: rgba(255, 255, 255, 0.06);
+  --color-drawer-error-bg: rgba(255, 23, 68, 0.16);
+  --color-drawer-error-border: rgba(255, 23, 68, 0.42);
+  --color-drawer-error-text: #ff97aa;
+  --color-drawer-accent-soft: rgba(255, 3, 91, 0.16);
+
+  /* Modal (session invite dialogs) */
+  --color-modal-surface: rgba(20, 29, 43, 0.98);
+  --color-modal-border: rgba(255, 255, 255, 0.14);
+  --color-modal-text: #ffffff;
+  --color-modal-text-muted: #a0aec0;
+  --color-modal-muted-bg: rgba(255, 255, 255, 0.06);
+  --color-modal-backdrop: rgba(6, 10, 17, 0.48);
+  --color-modal-error-bg: rgba(255, 23, 68, 0.16);
+  --color-modal-error-border: rgba(255, 23, 68, 0.42);
+  --color-modal-error-text: #ff97aa;
+
+  /* Session details bottom sheet */
+  --color-sheet-surface: rgba(20, 29, 43, 0.96);
+  --color-sheet-border: rgba(255, 255, 255, 0.16);
+  --color-sheet-handle: rgba(255, 255, 255, 0.28);
+  --color-sheet-tip: rgba(255, 255, 255, 0.04);
+  --color-sheet-text: #ffffff;
+  --color-sheet-muted: #a0aec0;
+
+  /* Onboarding username suggestion */
+  --color-onboard-suggestion-surface: rgba(30, 40, 55, 0.78);
+  --color-onboard-suggestion-border: rgba(255, 255, 255, 0.18);
+  --color-onboard-suggestion-text: #cbd5e1;
+  --color-onboard-suggestion-chip-bg: rgba(255, 3, 91, 0.14);
+  --color-onboard-suggestion-chip-text: #ff7fa9;
+
+  /* Live route visuals */
+  --route-line-halo: rgba(244, 248, 255, 0.82);
+  --route-line-core: #00d4ff;
+  --route-chip-bg: rgba(12, 22, 39, 0.74);
+  --route-chip-border: rgba(255, 255, 255, 0.24);
+  --route-chip-text: #ffffff;
+  --route-chip-muted: #b8c4d6;
+  --route-line-core-mine: #00d4ff;
+  --route-line-core-partner: #ff8a5b;
+  --color-meeting-accent: #12b886;
+  --color-meeting-marker: #ffb300;
+  --color-meeting-dialog-border: rgba(18, 184, 134, 0.34);
+  --color-meeting-input-bg: rgba(255, 255, 255, 0.05);
+  --color-meeting-input-border: rgba(255, 255, 255, 0.2);
+  --color-meeting-suggestion-bg: rgba(255, 255, 255, 0.04);
+  --color-meeting-suggestion-border: rgba(255, 255, 255, 0.18);
+  --color-meeting-fab-bg: rgba(15, 26, 45, 0.62);
+  --color-meeting-fab-border: rgba(255, 255, 255, 0.26);
+  --color-meeting-fab-text: #f8fafc;
+  --color-meeting-chip-bg: rgba(18, 184, 134, 0.16);
+  --color-meeting-chip-border: rgba(18, 184, 134, 0.46);
+  --color-meeting-chip-text: #d8fff2;
+  --color-camera-fab-bg: rgba(15, 26, 45, 0.45);
+  --color-camera-fab-border: rgba(255, 255, 255, 0.24);
+  --color-camera-fab-text: #f8fafc;
+  --color-camera-fab-active-bg: rgba(0, 212, 255, 0.22);
+  --color-camera-fab-active-border: rgba(0, 212, 255, 0.5);
+  --color-camera-fab-active-text: #c8f5ff;
+  
+  /* Spacing Scale (Mobile-first: 4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  
+  /* Touch Targets (minimum 56px for accessibility) */
+  --touch-target-min: 56px;
+  --touch-target-comfortable: 48px;
+  
+  /* Border Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+  
+  /* Typography Scale */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 30px;
+  
+  /* Safe Area Insets for Notched Phones */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+}
+
+:root[data-theme='light'] {
+  --color-drawer-surface: rgba(248, 251, 255, 0.98);
+  --color-drawer-border: rgba(15, 23, 42, 0.14);
+  --color-drawer-text: #0f172a;
+  --color-drawer-text-muted: #475569;
+  --color-drawer-backdrop: rgba(11, 18, 32, 0.2);
+  --color-drawer-item-bg: rgba(15, 23, 42, 0.04);
+  --color-drawer-avatar-bg: rgba(15, 23, 42, 0.08);
+  --color-drawer-self-bg: rgba(255, 3, 91, 0.08);
+  --color-drawer-self-border: rgba(255, 3, 91, 0.36);
+  --color-drawer-skeleton: rgba(15, 23, 42, 0.09);
+  --color-drawer-muted-bg: rgba(15, 23, 42, 0.05);
+  --color-drawer-error-bg: rgba(255, 23, 68, 0.1);
+  --color-drawer-error-border: rgba(255, 23, 68, 0.24);
+  --color-drawer-error-text: #b42318;
+  --color-drawer-accent-soft: rgba(255, 3, 91, 0.12);
+  --color-modal-surface: rgba(248, 251, 255, 0.98);
+  --color-modal-border: rgba(15, 23, 42, 0.14);
+  --color-modal-text: #0f172a;
+  --color-modal-text-muted: #475569;
+  --color-modal-muted-bg: rgba(15, 23, 42, 0.05);
+  --color-modal-backdrop: rgba(11, 18, 32, 0.2);
+  --color-modal-error-bg: rgba(255, 23, 68, 0.1);
+  --color-modal-error-border: rgba(255, 23, 68, 0.24);
+  --color-modal-error-text: #b42318;
+  --color-sheet-surface: rgba(248, 251, 255, 0.98);
+  --color-sheet-border: rgba(15, 23, 42, 0.16);
+  --color-sheet-handle: rgba(15, 23, 42, 0.28);
+  --color-sheet-tip: rgba(15, 23, 42, 0.05);
+  --color-sheet-text: #0f172a;
+  --color-sheet-muted: #475569;
+  --color-onboard-suggestion-surface: rgba(255, 255, 255, 0.92);
+  --color-onboard-suggestion-border: rgba(15, 23, 42, 0.16);
+  --color-onboard-suggestion-text: #334155;
+  --color-onboard-suggestion-chip-bg: rgba(255, 3, 91, 0.1);
+  --color-onboard-suggestion-chip-text: #b20042;
+  --route-line-halo: rgba(9, 23, 47, 0.52);
+  --route-line-core: #0078ff;
+  --route-chip-bg: rgba(248, 251, 255, 0.9);
+  --route-chip-border: rgba(15, 23, 42, 0.2);
+  --route-chip-text: #0f172a;
+  --route-chip-muted: #334155;
+  --route-line-core-mine: #0078ff;
+  --route-line-core-partner: #f97316;
+  --color-meeting-accent: #0ea271;
+  --color-meeting-marker: #f59e0b;
+  --color-meeting-dialog-border: rgba(14, 162, 113, 0.3);
+  --color-meeting-input-bg: rgba(15, 23, 42, 0.04);
+  --color-meeting-input-border: rgba(15, 23, 42, 0.16);
+  --color-meeting-suggestion-bg: rgba(15, 23, 42, 0.03);
+  --color-meeting-suggestion-border: rgba(15, 23, 42, 0.14);
+  --color-meeting-fab-bg: rgba(248, 251, 255, 0.76);
+  --color-meeting-fab-border: rgba(15, 23, 42, 0.2);
+  --color-meeting-fab-text: #0f172a;
+  --color-meeting-chip-bg: rgba(14, 162, 113, 0.14);
+  --color-meeting-chip-border: rgba(14, 162, 113, 0.34);
+  --color-meeting-chip-text: #0f4b39;
+  --color-camera-fab-bg: rgba(248, 251, 255, 0.7);
+  --color-camera-fab-border: rgba(15, 23, 42, 0.2);
+  --color-camera-fab-text: #0f172a;
+  --color-camera-fab-active-bg: rgba(0, 120, 255, 0.14);
+  --color-camera-fab-active-border: rgba(0, 120, 255, 0.4);
+  --color-camera-fab-active-text: #0f3c8a;
+}
+
+:root[data-theme='dark'] {
+  --color-drawer-surface: rgba(20, 29, 43, 0.95);
+  --color-drawer-border: rgba(255, 255, 255, 0.14);
+  --color-drawer-text: #ffffff;
+  --color-drawer-text-muted: #a0aec0;
+  --color-drawer-backdrop: rgba(6, 10, 17, 0.45);
+  --color-drawer-item-bg: rgba(255, 255, 255, 0.04);
+  --color-drawer-avatar-bg: rgba(255, 255, 255, 0.08);
+  --color-drawer-self-bg: rgba(255, 3, 91, 0.16);
+  --color-drawer-self-border: rgba(255, 3, 91, 0.42);
+  --color-drawer-skeleton: rgba(255, 255, 255, 0.08);
+  --color-drawer-muted-bg: rgba(255, 255, 255, 0.06);
+  --color-drawer-error-bg: rgba(255, 23, 68, 0.16);
+  --color-drawer-error-border: rgba(255, 23, 68, 0.42);
+  --color-drawer-error-text: #ff97aa;
+  --color-drawer-accent-soft: rgba(255, 3, 91, 0.16);
+  --color-modal-surface: rgba(20, 29, 43, 0.98);
+  --color-modal-border: rgba(255, 255, 255, 0.14);
+  --color-modal-text: #ffffff;
+  --color-modal-text-muted: #a0aec0;
+  --color-modal-muted-bg: rgba(255, 255, 255, 0.06);
+  --color-modal-backdrop: rgba(6, 10, 17, 0.48);
+  --color-modal-error-bg: rgba(255, 23, 68, 0.16);
+  --color-modal-error-border: rgba(255, 23, 68, 0.42);
+  --color-modal-error-text: #ff97aa;
+  --color-sheet-surface: rgba(20, 29, 43, 0.96);
+  --color-sheet-border: rgba(255, 255, 255, 0.16);
+  --color-sheet-handle: rgba(255, 255, 255, 0.28);
+  --color-sheet-tip: rgba(255, 255, 255, 0.04);
+  --color-sheet-text: #ffffff;
+  --color-sheet-muted: #a0aec0;
+  --color-onboard-suggestion-surface: rgba(30, 40, 55, 0.78);
+  --color-onboard-suggestion-border: rgba(255, 255, 255, 0.18);
+  --color-onboard-suggestion-text: #cbd5e1;
+  --color-onboard-suggestion-chip-bg: rgba(255, 3, 91, 0.14);
+  --color-onboard-suggestion-chip-text: #ff7fa9;
+  --route-line-halo: rgba(244, 248, 255, 0.82);
+  --route-line-core: #00d4ff;
+  --route-chip-bg: rgba(12, 22, 39, 0.74);
+  --route-chip-border: rgba(255, 255, 255, 0.24);
+  --route-chip-text: #ffffff;
+  --route-chip-muted: #b8c4d6;
+  --route-line-core-mine: #00d4ff;
+  --route-line-core-partner: #ff8a5b;
+  --color-meeting-accent: #12b886;
+  --color-meeting-marker: #ffb300;
+  --color-meeting-dialog-border: rgba(18, 184, 134, 0.34);
+  --color-meeting-input-bg: rgba(255, 255, 255, 0.05);
+  --color-meeting-input-border: rgba(255, 255, 255, 0.2);
+  --color-meeting-suggestion-bg: rgba(255, 255, 255, 0.04);
+  --color-meeting-suggestion-border: rgba(255, 255, 255, 0.18);
+  --color-meeting-fab-bg: rgba(15, 26, 45, 0.62);
+  --color-meeting-fab-border: rgba(255, 255, 255, 0.26);
+  --color-meeting-fab-text: #f8fafc;
+  --color-meeting-chip-bg: rgba(18, 184, 134, 0.16);
+  --color-meeting-chip-border: rgba(18, 184, 134, 0.46);
+  --color-meeting-chip-text: #d8fff2;
+  --color-camera-fab-bg: rgba(15, 26, 45, 0.45);
+  --color-camera-fab-border: rgba(255, 255, 255, 0.24);
+  --color-camera-fab-text: #f8fafc;
+  --color-camera-fab-active-bg: rgba(0, 212, 255, 0.22);
+  --color-camera-fab-active-border: rgba(0, 212, 255, 0.5);
+  --color-camera-fab-active-text: #c8f5ff;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --color-drawer-surface: rgba(248, 251, 255, 0.98);
+    --color-drawer-border: rgba(15, 23, 42, 0.14);
+    --color-drawer-text: #0f172a;
+    --color-drawer-text-muted: #475569;
+    --color-drawer-backdrop: rgba(11, 18, 32, 0.2);
+    --color-drawer-item-bg: rgba(15, 23, 42, 0.04);
+    --color-drawer-avatar-bg: rgba(15, 23, 42, 0.08);
+    --color-drawer-self-bg: rgba(255, 3, 91, 0.08);
+    --color-drawer-self-border: rgba(255, 3, 91, 0.36);
+    --color-drawer-skeleton: rgba(15, 23, 42, 0.09);
+    --color-drawer-muted-bg: rgba(15, 23, 42, 0.05);
+    --color-drawer-error-bg: rgba(255, 23, 68, 0.1);
+    --color-drawer-error-border: rgba(255, 23, 68, 0.24);
+    --color-drawer-error-text: #b42318;
+    --color-drawer-accent-soft: rgba(255, 3, 91, 0.12);
+    --color-modal-surface: rgba(248, 251, 255, 0.98);
+    --color-modal-border: rgba(15, 23, 42, 0.14);
+    --color-modal-text: #0f172a;
+    --color-modal-text-muted: #475569;
+    --color-modal-muted-bg: rgba(15, 23, 42, 0.05);
+    --color-modal-backdrop: rgba(11, 18, 32, 0.2);
+    --color-modal-error-bg: rgba(255, 23, 68, 0.1);
+    --color-modal-error-border: rgba(255, 23, 68, 0.24);
+    --color-modal-error-text: #b42318;
+    --color-sheet-surface: rgba(248, 251, 255, 0.98);
+    --color-sheet-border: rgba(15, 23, 42, 0.16);
+    --color-sheet-handle: rgba(15, 23, 42, 0.28);
+    --color-sheet-tip: rgba(15, 23, 42, 0.05);
+    --color-sheet-text: #0f172a;
+    --color-sheet-muted: #475569;
+    --color-onboard-suggestion-surface: rgba(255, 255, 255, 0.92);
+    --color-onboard-suggestion-border: rgba(15, 23, 42, 0.16);
+    --color-onboard-suggestion-text: #334155;
+    --color-onboard-suggestion-chip-bg: rgba(255, 3, 91, 0.1);
+    --color-onboard-suggestion-chip-text: #b20042;
+    --route-line-halo: rgba(9, 23, 47, 0.52);
+    --route-line-core: #0078ff;
+    --route-chip-bg: rgba(248, 251, 255, 0.9);
+    --route-chip-border: rgba(15, 23, 42, 0.2);
+    --route-chip-text: #0f172a;
+    --route-chip-muted: #334155;
+    --route-line-core-mine: #0078ff;
+    --route-line-core-partner: #f97316;
+    --color-meeting-accent: #0ea271;
+    --color-meeting-marker: #f59e0b;
+    --color-meeting-dialog-border: rgba(14, 162, 113, 0.3);
+    --color-meeting-input-bg: rgba(15, 23, 42, 0.04);
+    --color-meeting-input-border: rgba(15, 23, 42, 0.16);
+    --color-meeting-suggestion-bg: rgba(15, 23, 42, 0.03);
+    --color-meeting-suggestion-border: rgba(15, 23, 42, 0.14);
+    --color-meeting-fab-bg: rgba(248, 251, 255, 0.76);
+    --color-meeting-fab-border: rgba(15, 23, 42, 0.2);
+    --color-meeting-fab-text: #0f172a;
+    --color-meeting-chip-bg: rgba(14, 162, 113, 0.14);
+    --color-meeting-chip-border: rgba(14, 162, 113, 0.34);
+    --color-meeting-chip-text: #0f4b39;
+    --color-camera-fab-bg: rgba(248, 251, 255, 0.7);
+    --color-camera-fab-border: rgba(15, 23, 42, 0.2);
+    --color-camera-fab-text: #0f172a;
+    --color-camera-fab-active-bg: rgba(0, 120, 255, 0.14);
+    --color-camera-fab-active-border: rgba(0, 120, 255, 0.4);
+    --color-camera-fab-active-text: #0f3c8a;
+  }
+}
+
+/* ============================================
+   Base Styles - Mobile First
+   ============================================ */
+
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background-color: var(--color-navy-bg);
+  color: var(--color-text-primary);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  /* Prevent text size adjustment on orientation change */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  
+  /* Safe area support for notched devices */
+  padding-top: var(--safe-area-top);
+  padding-bottom: var(--safe-area-bottom);
+  padding-left: var(--safe-area-left);
+  padding-right: var(--safe-area-right);
+}
+
+.route-info-chip {
+  border-radius: 9999px;
+  border: 1px solid var(--route-chip-border);
+  background: var(--route-chip-bg);
+  color: var(--route-chip-text);
+  backdrop-filter: blur(10px);
+  padding: 10px 16px;
+  min-width: 160px;
+}
+
+.route-info-chip__label {
+  color: var(--route-chip-muted);
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.route-info-chip__value {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.meeting-fab {
+  border: 1px solid var(--color-meeting-fab-border);
+  background: var(--color-meeting-fab-bg);
+  color: var(--color-meeting-fab-text);
+  backdrop-filter: blur(12px);
+  opacity: 0.6;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.26);
+  transition: opacity 180ms ease, transform 180ms ease, background-color 180ms ease;
+}
+
+.meeting-fab--active {
+  border-color: var(--color-meeting-chip-border);
+  border-width: 1.4px;
+  background: var(--color-meeting-chip-bg);
+  color: var(--color-meeting-chip-text);
+  opacity: 0.95;
+}
+
+.meeting-fab:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.meeting-fab:focus-visible {
+  opacity: 0.92;
+}
+
+.camera-fab {
+  border: 1px solid var(--color-camera-fab-border);
+  background: var(--color-camera-fab-bg);
+  color: var(--color-camera-fab-text);
+  backdrop-filter: blur(12px);
+  opacity: 0.55;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+  transition: opacity 180ms ease, transform 180ms ease, background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+.camera-fab:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
+.camera-fab:focus-visible {
+  opacity: 0.92;
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.camera-fab[data-active='true'] {
+  background: var(--color-camera-fab-active-bg);
+  border-color: var(--color-camera-fab-active-border);
+  color: var(--color-camera-fab-active-text);
+  opacity: 0.92;
+}
+
+.meeting-status-chip {
+  border-radius: 9999px;
+  border: 1px solid var(--color-meeting-chip-border);
+  background: var(--color-meeting-chip-bg);
+  color: var(--color-meeting-chip-text);
+  backdrop-filter: blur(10px);
+  padding: 8px 14px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-info-chip,
+  .meeting-fab,
+  .camera-fab,
+  .meeting-status-chip {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ============================================
+   Mobile-First Layout Helpers
+   ============================================ */
+
+/* Safe area container for fixed elements */
+.safe-area-inset {
+  padding-top: var(--safe-area-top);
+  padding-bottom: var(--safe-area-bottom);
+  padding-left: max(var(--space-4), var(--safe-area-left));
+  padding-right: max(var(--space-4), var(--safe-area-right));
+}
+
+/* Bottom sheet safe area */
+.safe-area-bottom {
+  padding-bottom: max(var(--space-6), var(--safe-area-bottom));
+}
+
+/* ============================================
+   Touch Target Utilities
+   ============================================ */
+
+.touch-target {
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+}
+
+.touch-target-comfortable {
+  min-height: var(--touch-target-comfortable);
+  min-width: var(--touch-target-comfortable);
+}
+
+/* ============================================
+   Custom Scrollbar (Mobile-optimized)
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-navy-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-navy-elevated);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Hide scrollbar for mobile-native feel */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================
+   Focus States (Mobile-optimized)
+   ============================================ */
+
+/* Remove default focus outline, add custom */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-rose);
+  outline-offset: 2px;
+}
+
+/* Touch action optimization */
+button,
+a,
+[role="button"] {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+}
+
+/* ============================================
+   Animation Utilities
+   ============================================ */
+
+@keyframes pulse-skeleton {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.animate-pulse-skeleton {
+  animation: pulse-skeleton 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes suggestion-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.username-suggestion-enter {
+  animation: suggestion-enter 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.username-suggestion-card {
+  border: 1px solid var(--color-onboard-suggestion-border);
+  background: var(--color-onboard-suggestion-surface);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.username-suggestion-chip {
+  border: 1px solid var(--color-onboard-suggestion-border);
+  background: var(--color-onboard-suggestion-chip-bg);
+  color: var(--color-onboard-suggestion-chip-text);
+  border-radius: 9999px;
+  padding: 8px 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: transform 180ms ease, filter 180ms ease;
+}
+
+.username-suggestion-chip:hover {
+  transform: translateY(-1px) scale(1.02);
+  filter: brightness(1.06);
+}
+
+@keyframes suggestion-chip-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.username-suggestion-chip.is-applied {
+  animation: suggestion-chip-pop 260ms ease-out;
+}
+
+@keyframes username-autofill {
+  0% {
+    box-shadow: 0 0 0 rgba(0, 200, 83, 0);
+    transform: scale(1);
+  }
+  45% {
+    box-shadow: 0 0 0 5px rgba(0, 200, 83, 0.24);
+    transform: scale(1.01);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(0, 200, 83, 0);
+    transform: scale(1);
+  }
+}
+
+.username-input-autofill {
+  border-color: rgba(0, 200, 83, 0.78) !important;
+  animation: username-autofill 620ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.identity-recovery-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-modal-surface);
+  border: 1px solid var(--color-modal-border);
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.35);
+}
+
+.identity-recovery-glow {
+  position: absolute;
+  top: -120px;
+  right: -80px;
+  width: 220px;
+  height: 220px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(255, 3, 91, 0.26) 0%, rgba(255, 3, 91, 0) 70%);
+  pointer-events: none;
+}
+
+.identity-recovery-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 9999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-modal-text);
+  background: var(--color-modal-muted-bg);
+  border: 1px solid var(--color-modal-border);
+}
+
+.identity-recovery-username-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 9999px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-rose);
+  background: rgba(255, 3, 91, 0.12);
+  border: 1px solid rgba(255, 3, 91, 0.32);
+}
+
+.identity-recovery-primary-btn,
+.identity-recovery-secondary-btn {
+  width: 100%;
+  min-height: 52px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  transition: opacity 180ms ease, transform 180ms ease, filter 180ms ease;
+}
+
+.identity-recovery-primary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #ffffff;
+  background: var(--color-rose);
+}
+
+.identity-recovery-primary-btn:hover {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+}
+
+.identity-recovery-secondary-btn {
+  color: var(--color-modal-text);
+  background: var(--color-modal-muted-bg);
+  border: 1px solid var(--color-modal-border);
+}
+
+.identity-recovery-secondary-btn:hover {
+  filter: brightness(1.03);
+}
+
+.identity-recovery-primary-btn:disabled,
+.identity-recovery-secondary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ============================================
+   Selection Styles
+   ============================================ */
+
+::selection {
+  background-color: var(--color-rose);
+  color: white;
+}
