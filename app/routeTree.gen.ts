@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WelcomeRouteImport } from './routes/welcome'
+import { Route as Soul_gameRouteImport } from './routes/soul_game'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SigninRouteImport } from './routes/signin'
 import { Route as SessionRouteImport } from './routes/session'
@@ -24,6 +25,11 @@ import { Route as MapSessionIdRouteImport } from './routes/map.$sessionId'
 const WelcomeRoute = WelcomeRouteImport.update({
   id: '/welcome',
   path: '/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Soul_gameRoute = Soul_gameRouteImport.update({
+  id: '/soul_game',
+  path: '/soul_game',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupRoute = SignupRouteImport.update({
@@ -83,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/session': typeof SessionRouteWithChildren
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
+  '/soul_game': typeof Soul_gameRoute
   '/welcome': typeof WelcomeRoute
   '/map/$sessionId': typeof MapSessionIdRoute
   '/session/create': typeof SessionCreateRoute
@@ -95,6 +102,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
+  '/soul_game': typeof Soul_gameRoute
   '/welcome': typeof WelcomeRoute
   '/map/$sessionId': typeof MapSessionIdRoute
   '/session/create': typeof SessionCreateRoute
@@ -109,6 +117,7 @@ export interface FileRoutesById {
   '/session': typeof SessionRouteWithChildren
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
+  '/soul_game': typeof Soul_gameRoute
   '/welcome': typeof WelcomeRoute
   '/map/$sessionId': typeof MapSessionIdRoute
   '/session/create': typeof SessionCreateRoute
@@ -124,6 +133,7 @@ export interface FileRouteTypes {
     | '/session'
     | '/signin'
     | '/signup'
+    | '/soul_game'
     | '/welcome'
     | '/map/$sessionId'
     | '/session/create'
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/signin'
     | '/signup'
+    | '/soul_game'
     | '/welcome'
     | '/map/$sessionId'
     | '/session/create'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/session'
     | '/signin'
     | '/signup'
+    | '/soul_game'
     | '/welcome'
     | '/map/$sessionId'
     | '/session/create'
@@ -163,6 +175,7 @@ export interface RootRouteChildren {
   SessionRoute: typeof SessionRouteWithChildren
   SigninRoute: typeof SigninRoute
   SignupRoute: typeof SignupRoute
+  Soul_gameRoute: typeof Soul_gameRoute
   WelcomeRoute: typeof WelcomeRoute
   MapSessionIdRoute: typeof MapSessionIdRoute
 }
@@ -174,6 +187,13 @@ declare module '@tanstack/react-router' {
       path: '/welcome'
       fullPath: '/welcome'
       preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/soul_game': {
+      id: '/soul_game'
+      path: '/soul_game'
+      fullPath: '/soul_game'
+      preLoaderRoute: typeof Soul_gameRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signup': {
@@ -272,6 +292,7 @@ const rootRouteChildren: RootRouteChildren = {
   SessionRoute: SessionRouteWithChildren,
   SigninRoute: SigninRoute,
   SignupRoute: SignupRoute,
+  Soul_gameRoute: Soul_gameRoute,
   WelcomeRoute: WelcomeRoute,
   MapSessionIdRoute: MapSessionIdRoute,
 }
