@@ -1,3 +1,27 @@
+## HOW TO SETUP (START HERE - EYYMI Frontend / `eyymi_tanstack`)
+
+Friendly step-by-step for your colleague after cloning:
+
+1. Clone the repo and open it in terminal:
+   - `cd eyymi_tanstack`
+2. Install dependencies (use one):
+   - `npm install`
+   - or `bun install`
+3. Create `.env.local` in the repo root:
+   - I already sent the correct `.env.local` values by email (copy those values here).
+4. Start the frontend dev server:
+   - `npm run dev`
+   - or `bun run dev`
+5. Open the app in browser:
+   - `http://localhost:3000`
+6. Recommended checks before pushing changes:
+   - `npm run typecheck`
+   - `npm run build`
+
+Notes:
+- This frontend depends on the Convex backend repo (`eyymi_backend_convex`) running / deployed and using the matching Convex URL in `.env.local`.
+- Do not commit `.env.local` to git.
+
 Welcome to your new TanStack Start app! 
 
 # Getting Started
