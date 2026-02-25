@@ -49,6 +49,13 @@ type PressEndResult = {
   serverNow: number;
 };
 
+type SoulGameDebugEvent = {
+  id: number;
+  at: string;
+  event: string;
+  detail?: Record<string, unknown>;
+};
+
 type SoulGameClientState = {
   serverNow: number;
   queueSnapshot: {
@@ -132,6 +139,7 @@ function getBoundSoulAvatarVariant(
 }
 
 function SoulGameRoute() {
+  const isDevDebug = import.meta.env.DEV;
   const hasOtpAuth = otpAuthStorage.hasValidSession();
   const otpSession = otpAuthStorage.getSession();
   const username = storage.getUsername() ?? "you";
@@ -146,6 +154,7 @@ function SoulGameRoute() {
   const [isSubmittingPress, setIsSubmittingPress] = useState(false);
   const [pressStartedAtMs, setPressStartedAtMs] = useState<number | null>(null);
   const [holdProgress, setHoldProgress] = useState(0);
+  const [debugEvents, setDebugEvents] = useState<SoulGameDebugEvent[]>([]);
   const [localUiState, setLocalUiState] = useState<SoulGameUiStateKey>("idle");
   const [inlineErrorCode, setInlineErrorCode] = useState<
     | "QUEUE_JOIN_FAILED"
@@ -159,7 +168,20 @@ function SoulGameRoute() {
   >(null);
   const heartbeatTimerRef = useRef<number | null>(null);
   const activePointerIdRef = useRef<number | null>(null);
+  const debugSeqRef = useRef(0);
   const lastLocalAvatarId = useMemo(() => soulGameAvatarCatalog[0]?.id ?? "soul-ava-01", []);
+
+  const pushDebugEvent = (event: string, detail?: Record<string, unknown>) => {
+    if (!isDevDebug) return;
+    const row: SoulGameDebugEvent = {
+      id: ++debugSeqRef.current,
+      at: new Date().toLocaleTimeString(),
+      event,
+      detail,
+    };
+    console.log("[SoulGameDebug]", row.event, row.detail ?? {});
+    setDebugEvents((prev) => [row, ...prev].slice(0, 10));
+  };
 
   const {
     data: clientState,
@@ -174,6 +196,9 @@ function SoulGameRoute() {
 
   useEffect(() => {
     if (!clientStateError) return;
+    pushDebugEvent("subscription:error", {
+      message: clientStateError.message,
+    });
     setInlineErrorCode("MATCH_SYNC_FAILED");
   }, [clientStateError]);
 
@@ -183,6 +208,11 @@ function SoulGameRoute() {
     let cancelled = false;
     setIsJoining(true);
     setInlineErrorCode(null);
+    pushDebugEvent("joinQueue:request", {
+      username,
+      hasOtp: Boolean(otpSession?.authUserId),
+      profileUserId: profileUserId ?? null,
+    });
 
     void convexMutation<JoinQueueResult>("soulGamePresence:joinQueue", {
       authUserId: otpSession.authUserId,
@@ -192,11 +222,19 @@ function SoulGameRoute() {
     })
       .then((result) => {
         if (cancelled) return;
+        pushDebugEvent("joinQueue:response", {
+          queueEntryId: result.queueEntryId,
+          status: result.status,
+          serverNow: result.serverNow,
+        });
         setQueueEntryId(result.queueEntryId);
         setLocalUiState(result.status === "matched" ? "matched" : "queueing");
       })
       .catch((error) => {
         if (cancelled) return;
+        pushDebugEvent("joinQueue:error", {
+          message: error instanceof Error ? error.message : String(error),
+        });
         if (import.meta.env.DEV) {
           console.error("[SoulGame] joinQueue failed", error);
         }
@@ -218,8 +256,14 @@ function SoulGameRoute() {
 
     const sendHeartbeat = async () => {
       try {
+        pushDebugEvent("heartbeat:request", { queueEntryId });
         await convexMutation("soulGamePresence:heartbeat", { queueEntryId });
+        pushDebugEvent("heartbeat:response", { queueEntryId, ok: true });
       } catch (error) {
+        pushDebugEvent("heartbeat:error", {
+          queueEntryId,
+          message: error instanceof Error ? error.message : String(error),
+        });
         if (import.meta.env.DEV) {
           console.error("[SoulGame] heartbeat failed", error);
         }
@@ -237,6 +281,30 @@ function SoulGameRoute() {
       }
     };
   }, [queueEntryId]);
+
+  useEffect(() => {
+    if (!isDevDebug || typeof window === "undefined") return;
+    (window as Window & { __SOUL_GAME_DEBUG__?: unknown }).__SOUL_GAME_DEBUG__ = {
+      queueEntryId,
+      pressEventId,
+      isPressing,
+      isSubmittingPress,
+      holdProgress,
+      localUiState,
+      latestClientState: clientState,
+      latestDebugEvents: debugEvents,
+    };
+  }, [
+    isDevDebug,
+    queueEntryId,
+    pressEventId,
+    isPressing,
+    isSubmittingPress,
+    holdProgress,
+    localUiState,
+    clientState,
+    debugEvents,
+  ]);
 
   useEffect(() => {
     if (!isPressing || pressStartedAtMs === null) {
@@ -325,15 +393,34 @@ function SoulGameRoute() {
   const isMatchedOrSession = localUiState === "matched" || localUiState === "session";
 
   const handlePressStart = async (pointerId: number) => {
-    if (!queueEntryId || isSubmittingPress || isMatchedOrSession) return;
+    if (!queueEntryId || isSubmittingPress || isMatchedOrSession) {
+      pushDebugEvent("press:pointerDown:ignored", {
+        queueEntryId,
+        isSubmittingPress,
+        isMatchedOrSession,
+      });
+      return;
+    }
     activePointerIdRef.current = pointerId;
+    pushDebugEvent("press:pointerDown", {
+      pointerId,
+      queueEntryId,
+      existingPressEventId: pressEventId,
+    });
     setInlineErrorCode(null);
     setIsPressing(true);
     setPressStartedAtMs(Date.now());
     setLocalUiState("pressing");
 
     try {
+      pushDebugEvent("pressStart:request", { queueEntryId });
       const result = await convexMutation<PressStartResult>("soulGameMatch:pressStart", { queueEntryId });
+      pushDebugEvent("pressStart:response", {
+        ok: result.ok,
+        pressEventId: result.pressEventId ?? null,
+        reason: result.reason ?? null,
+        serverNow: result.serverNow,
+      });
       if (!result.ok || !result.pressEventId) {
         setInlineErrorCode("PRESS_START_FAILED");
         setIsPressing(false);
@@ -343,6 +430,9 @@ function SoulGameRoute() {
       }
       setPressEventId(result.pressEventId);
     } catch (error) {
+      pushDebugEvent("pressStart:error", {
+        message: error instanceof Error ? error.message : String(error),
+      });
       if (import.meta.env.DEV) {
         console.error("[SoulGame] pressStart failed", error);
       }
@@ -355,11 +445,25 @@ function SoulGameRoute() {
 
   const handlePressEnd = async (pointerId?: number) => {
     if (pointerId !== undefined && activePointerIdRef.current !== null && pointerId !== activePointerIdRef.current) {
+      pushDebugEvent("press:pointerUp:ignoredPointerMismatch", {
+        pointerId,
+        activePointerId: activePointerIdRef.current,
+      });
       return;
     }
+    pushDebugEvent("press:pointerUp", {
+      pointerId: pointerId ?? null,
+      activePointerId: activePointerIdRef.current,
+      queueEntryId,
+      pressEventId,
+    });
     activePointerIdRef.current = null;
 
     if (!queueEntryId || !pressEventId) {
+      pushDebugEvent("pressEnd:skippedMissingIds", {
+        queueEntryId,
+        pressEventId,
+      });
       setIsPressing(false);
       return;
     }
@@ -369,9 +473,23 @@ function SoulGameRoute() {
     setPressStartedAtMs(null);
 
     try {
+      pushDebugEvent("pressEnd:request", {
+        queueEntryId,
+        pressEventId,
+      });
       const result = await convexMutation<PressEndResult>("soulGameMatch:pressEnd", {
         queueEntryId,
         pressEventId,
+      });
+      pushDebugEvent("pressEnd:response", {
+        ok: result.ok,
+        matched: result.matched,
+        reason: result.reason ?? null,
+        matchId: result.matchId ?? null,
+        sessionId: result.sessionId ?? null,
+        overlapMs: result.overlapMs ?? null,
+        durationMs: result.durationMs ?? null,
+        serverNow: result.serverNow,
       });
 
       if (!result.ok) {
@@ -385,6 +503,9 @@ function SoulGameRoute() {
         setLocalUiState("queueing");
       }
     } catch (error) {
+      pushDebugEvent("pressEnd:error", {
+        message: error instanceof Error ? error.message : String(error),
+      });
       if (import.meta.env.DEV) {
         console.error("[SoulGame] pressEnd failed", error);
       }
@@ -400,7 +521,9 @@ function SoulGameRoute() {
     if (!queueEntryId) return;
     try {
       setAutoJoinEnabled(false);
+      pushDebugEvent("leaveQueue:request", { queueEntryId });
       await convexMutation("soulGamePresence:leaveQueue", { queueEntryId });
+      pushDebugEvent("leaveQueue:response", { queueEntryId, ok: true });
       setQueueEntryId(null);
       setPressEventId(null);
       setIsPressing(false);
@@ -408,6 +531,10 @@ function SoulGameRoute() {
       setInlineErrorCode(null);
       setLocalUiState("idle");
     } catch (error) {
+      pushDebugEvent("leaveQueue:error", {
+        queueEntryId,
+        message: error instanceof Error ? error.message : String(error),
+      });
       if (import.meta.env.DEV) {
         console.error("[SoulGame] leaveQueue failed", error);
       }
@@ -592,26 +719,35 @@ function SoulGameRoute() {
                   <button
                     type="button"
                     disabled={isSubmittingPress || isMatchedOrSession}
-                    onPointerDown={(event) => {
-                      event.preventDefault();
-                      if (!isQueueReady) {
-                        void handleJoinQueueManual();
-                        return;
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    pushDebugEvent("button:onPointerDown", {
+                      pointerId: event.pointerId,
+                      isQueueReady,
+                      isJoining,
+                      isSubmittingPress,
+                    });
+                    if (!isQueueReady) {
+                      void handleJoinQueueManual();
+                      return;
                       }
                       void handlePressStart(event.pointerId);
                     }}
-                    onPointerUp={(event) => {
-                      event.preventDefault();
-                      void handlePressEnd(event.pointerId);
-                    }}
-                    onPointerCancel={(event) => {
-                      event.preventDefault();
-                      void handlePressEnd(event.pointerId);
-                    }}
-                    onPointerLeave={(event) => {
-                      if (!isPressing) return;
-                      void handlePressEnd(event.pointerId);
-                    }}
+                  onPointerUp={(event) => {
+                    event.preventDefault();
+                    pushDebugEvent("button:onPointerUp", { pointerId: event.pointerId });
+                    void handlePressEnd(event.pointerId);
+                  }}
+                  onPointerCancel={(event) => {
+                    event.preventDefault();
+                    pushDebugEvent("button:onPointerCancel", { pointerId: event.pointerId });
+                    void handlePressEnd(event.pointerId);
+                  }}
+                  onPointerLeave={(event) => {
+                    if (!isPressing) return;
+                    pushDebugEvent("button:onPointerLeave", { pointerId: event.pointerId });
+                    void handlePressEnd(event.pointerId);
+                  }}
                     className={`group absolute inset-0 touch-none rounded-full border text-center transition duration-75 motion-reduce:transition-none disabled:opacity-70 ${
                       isPressing
                         ? "translate-y-2 border-[var(--color-rose)]/50 bg-[linear-gradient(180deg,rgba(20,184,166,0.16),rgba(20,184,166,0.07))]"
@@ -673,6 +809,47 @@ function SoulGameRoute() {
                   Session = {soulGameTimingConfig.sessionDurationMs / 60000} min
                 </div>
               </div>
+
+              {isDevDebug ? (
+                <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-drawer-item-bg)] p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
+                      Debug (DEV)
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setDebugEvents([])}
+                      className="rounded-lg border border-[var(--color-border)] px-2 py-1 text-[10px] text-[var(--color-text-secondary)]"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">
+                    Check browser console for `SoulGameDebug` logs. Latest entries shown below.
+                  </p>
+                  <div className="mt-2 max-h-40 space-y-1 overflow-auto">
+                    {debugEvents.length === 0 ? (
+                      <p className="text-[11px] text-[var(--color-text-muted)]">No events yet.</p>
+                    ) : (
+                      debugEvents.map((row) => (
+                        <div
+                          key={row.id}
+                          className="rounded-lg border border-white/5 bg-[var(--color-navy-surface)] px-2 py-1.5 text-[11px]"
+                        >
+                          <p className="font-medium text-[var(--color-text-primary)]">
+                            {row.at} • {row.event}
+                          </p>
+                          {row.detail ? (
+                            <pre className="mt-1 overflow-x-auto text-[10px] leading-4 text-[var(--color-text-secondary)]">
+{JSON.stringify(row.detail, null, 2)}
+                            </pre>
+                          ) : null}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </section>
         </main>
