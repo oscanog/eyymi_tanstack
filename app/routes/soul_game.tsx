@@ -144,6 +144,8 @@ function SoulGameRoute() {
   const [isJoining, setIsJoining] = useState(false);
   const [isPressing, setIsPressing] = useState(false);
   const [isSubmittingPress, setIsSubmittingPress] = useState(false);
+  const [pressStartedAtMs, setPressStartedAtMs] = useState<number | null>(null);
+  const [holdProgress, setHoldProgress] = useState(0);
   const [localUiState, setLocalUiState] = useState<SoulGameUiStateKey>("idle");
   const [inlineErrorCode, setInlineErrorCode] = useState<
     | "QUEUE_JOIN_FAILED"
@@ -237,6 +239,28 @@ function SoulGameRoute() {
   }, [queueEntryId]);
 
   useEffect(() => {
+    if (!isPressing || pressStartedAtMs === null) {
+      setHoldProgress(0);
+      return;
+    }
+
+    let rafId = 0;
+    const tick = () => {
+      const elapsed = Date.now() - pressStartedAtMs;
+      const nextProgress = Math.min(1, elapsed / soulGameTimingConfig.minHoldMs);
+      setHoldProgress(nextProgress);
+      if (nextProgress < 1 && isPressing) {
+        rafId = window.requestAnimationFrame(tick);
+      }
+    };
+
+    rafId = window.requestAnimationFrame(tick);
+    return () => {
+      if (rafId) window.cancelAnimationFrame(rafId);
+    };
+  }, [isPressing, pressStartedAtMs]);
+
+  useEffect(() => {
     return () => {
       if (!queueEntryId) return;
       void convexMutation("soulGamePresence:leaveQueue", { queueEntryId }).catch(() => {});
@@ -281,9 +305,14 @@ function SoulGameRoute() {
 
   const statusTone = inlineMessage.tone === "success" ? "success" : inlineMessage.tone === "error" ? "error" : "info";
 
-  const queueCount = clientState?.queueSnapshot.queueCount ?? 0;
   const appOnlineCount = appOnlineUsers.length;
-  const candidates = clientState?.queueSnapshot.onlineCandidates ?? [];
+  const rawCandidates = clientState?.queueSnapshot.onlineCandidates ?? [];
+  const candidates = rawCandidates.filter((candidate) => {
+    if (queueEntryId && candidate.queueEntryId === queueEntryId) return false;
+    if (candidate.username && candidate.username === username) return false;
+    return true;
+  });
+  const availableOpponentCount = candidates.length;
   const highlightedIndex = Math.floor((clientState?.serverNow ?? Date.now()) / soulGameTimingConfig.candidateRotateMs) % Math.max(candidates.length || 1, 1);
   const highlightedCandidate = candidates.length ? candidates[highlightedIndex] : null;
   const highlightedAvatarVariant = getBoundSoulAvatarVariant(
@@ -300,6 +329,7 @@ function SoulGameRoute() {
     activePointerIdRef.current = pointerId;
     setInlineErrorCode(null);
     setIsPressing(true);
+    setPressStartedAtMs(Date.now());
     setLocalUiState("pressing");
 
     try {
@@ -307,6 +337,7 @@ function SoulGameRoute() {
       if (!result.ok || !result.pressEventId) {
         setInlineErrorCode("PRESS_START_FAILED");
         setIsPressing(false);
+        setPressStartedAtMs(null);
         setLocalUiState("queueing");
         return;
       }
@@ -317,6 +348,7 @@ function SoulGameRoute() {
       }
       setInlineErrorCode("PRESS_START_FAILED");
       setIsPressing(false);
+      setPressStartedAtMs(null);
       setLocalUiState("error");
     }
   };
@@ -334,6 +366,7 @@ function SoulGameRoute() {
 
     setIsSubmittingPress(true);
     setIsPressing(false);
+    setPressStartedAtMs(null);
 
     try {
       const result = await convexMutation<PressEndResult>("soulGameMatch:pressEnd", {
@@ -371,6 +404,7 @@ function SoulGameRoute() {
       setQueueEntryId(null);
       setPressEventId(null);
       setIsPressing(false);
+      setPressStartedAtMs(null);
       setInlineErrorCode(null);
       setLocalUiState("idle");
     } catch (error) {
@@ -435,19 +469,21 @@ function SoulGameRoute() {
                 <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
                   Queue
                 </p>
-                <p className="mt-1 text-base font-semibold">{queueCount} online in Soul Game</p>
+                <p className="mt-1 text-base font-semibold">
+                  {availableOpponentCount} online candidate{availableOpponentCount === 1 ? "" : "s"} in Soul Game
+                </p>
                 <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
                   {isClientStateLoading && !clientState
                     ? "Syncing queue..."
-                    : clientState?.queueSnapshot.estimatedWaitMs
+                    : availableOpponentCount > 0 && clientState?.queueSnapshot.estimatedWaitMs
                       ? `Estimated wait ~${Math.ceil(clientState.queueSnapshot.estimatedWaitMs / 1000)}s`
-                      : "Waiting for another player to hold"}
+                      : "Waiting for another player to hold (excludes you)"}
                 </p>
                 <p className="mt-1 text-xs text-[var(--color-text-muted)]">
                   App online (sidebar presence): {appOnlineCount}
                   {appOnlineUsersError ? " • sidebar presence unavailable" : ""}
                 </p>
-                {isQueueReady && queueCount === 0 ? (
+                {isQueueReady && availableOpponentCount === 0 ? (
                   <p className="mt-1 text-xs text-[var(--color-rose)]">
                     Queue sync looks delayed. Pull-to-refresh/reopen if this stays at 0.
                   </p>
@@ -533,75 +569,105 @@ function SoulGameRoute() {
               </div>
 
               <div className="flex justify-center">
-                <button
-                  type="button"
-                  disabled={!isQueueReady || isSubmittingPress || isMatchedOrSession}
-                  onPointerDown={(event) => {
-                    event.preventDefault();
-                    if (!isQueueReady) {
-                      void handleJoinQueueManual();
-                      return;
-                    }
-                    void handlePressStart(event.pointerId);
-                  }}
-                  onPointerUp={(event) => {
-                    event.preventDefault();
-                    void handlePressEnd(event.pointerId);
-                  }}
-                  onPointerCancel={(event) => {
-                    event.preventDefault();
-                    void handlePressEnd(event.pointerId);
-                  }}
-                  onPointerLeave={(event) => {
-                    if (!isPressing) return;
-                    void handlePressEnd(event.pointerId);
-                  }}
-                  className={`group relative flex h-44 w-44 touch-none items-center justify-center rounded-full border text-center shadow-[0_24px_45px_rgba(0,0,0,0.22)] transition duration-200 motion-reduce:transition-none disabled:opacity-60 ${
-                    isPressing
-                      ? "scale-[1.03] border-[var(--color-rose)] bg-[var(--color-rose)]/15"
-                      : isMatchedOrSession
-                        ? "border-[var(--color-rose)] bg-[var(--color-rose)]/20"
-                        : "border-[var(--color-border)] bg-[var(--color-drawer-item-bg)]"
-                  }`}
-                  aria-label={`${soulGameActionCopy.pressToMatch} to Soul Game match`}
-                >
-                  <span className="absolute inset-3 rounded-full border border-white/10" aria-hidden="true" />
-                  <span className="absolute inset-8 rounded-full border border-dashed border-[var(--color-rose)]/30" aria-hidden="true" />
+                <div className="relative h-48 w-48">
                   <span
-                    className={`absolute inset-0 rounded-full transition motion-reduce:transition-none ${
-                      isMatchedOrSession
-                        ? "animate-pulse bg-[radial-gradient(circle,rgba(20,184,166,0.20)_0%,rgba(20,184,166,0)_65%)]"
-                        : isPressing
-                          ? "bg-[radial-gradient(circle,rgba(20,184,166,0.16)_0%,rgba(20,184,166,0)_70%)]"
-                          : "opacity-0"
+                    className={`absolute inset-0 translate-y-2 rounded-full border border-[var(--color-border)] ${
+                      isPressing
+                        ? "bg-[var(--color-navy-elevated)]"
+                        : "bg-[color:rgba(255,255,255,0.03)]"
                     }`}
                     aria-hidden="true"
                   />
-                  <div className="relative z-10 flex flex-col items-center gap-1.5 px-4">
-                    <span className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-[var(--color-rose)]/35 bg-[var(--color-navy-surface)]/60">
-                      <Fingerprint className="h-6 w-6 text-[var(--color-rose)]" aria-hidden="true" />
-                    </span>
-                    <span className="text-[10px] uppercase tracking-[0.14em] text-[var(--color-text-muted)]">
-                      Press Here
-                    </span>
-                    <span className="text-sm font-semibold leading-4">
-                      {!isQueueReady
-                        ? isJoining
-                          ? "Joining queue..."
-                          : soulGameActionCopy.joinQueue
-                        : isSubmittingPress
-                          ? "Submitting..."
+                  <span
+                    className="absolute inset-2 rounded-full opacity-80"
+                    style={{
+                      background: `conic-gradient(rgba(20,184,166,0.9) ${Math.round(holdProgress * 360)}deg, rgba(255,255,255,0.06) 0deg)`,
+                    }}
+                    aria-hidden="true"
+                  />
+                  <span
+                    className="absolute inset-5 rounded-full border border-[var(--color-border)] bg-[var(--color-navy-bg)]"
+                    aria-hidden="true"
+                  />
+                  <button
+                    type="button"
+                    disabled={isSubmittingPress || isMatchedOrSession}
+                    onPointerDown={(event) => {
+                      event.preventDefault();
+                      if (!isQueueReady) {
+                        void handleJoinQueueManual();
+                        return;
+                      }
+                      void handlePressStart(event.pointerId);
+                    }}
+                    onPointerUp={(event) => {
+                      event.preventDefault();
+                      void handlePressEnd(event.pointerId);
+                    }}
+                    onPointerCancel={(event) => {
+                      event.preventDefault();
+                      void handlePressEnd(event.pointerId);
+                    }}
+                    onPointerLeave={(event) => {
+                      if (!isPressing) return;
+                      void handlePressEnd(event.pointerId);
+                    }}
+                    className={`group absolute inset-0 touch-none rounded-full border text-center transition duration-75 motion-reduce:transition-none disabled:opacity-70 ${
+                      isPressing
+                        ? "translate-y-2 border-[var(--color-rose)]/50 bg-[linear-gradient(180deg,rgba(20,184,166,0.16),rgba(20,184,166,0.07))]"
+                        : isMatchedOrSession
+                          ? "border-[var(--color-rose)] bg-[linear-gradient(180deg,rgba(20,184,166,0.18),rgba(20,184,166,0.10))]"
+                          : "border-[var(--color-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))]"
+                    }`}
+                    aria-label={`${soulGameActionCopy.pressToMatch} to Soul Game match`}
+                  >
+                    <span className="absolute inset-3 rounded-full border border-white/8" aria-hidden="true" />
+                    <span className="absolute inset-8 rounded-full border border-dashed border-[var(--color-rose)]/30" aria-hidden="true" />
+                    <span
+                      className={`absolute inset-0 rounded-full transition motion-reduce:transition-none ${
+                        isMatchedOrSession
+                          ? "animate-pulse bg-[radial-gradient(circle,rgba(20,184,166,0.20)_0%,rgba(20,184,166,0)_65%)]"
                           : isPressing
-                            ? soulGameActionCopy.releaseToSubmit
-                            : soulGameActionCopy.pressToMatch}
-                    </span>
-                  </div>
-                </button>
+                            ? "bg-[radial-gradient(circle,rgba(20,184,166,0.14)_0%,rgba(20,184,166,0)_72%)]"
+                            : "opacity-0"
+                      }`}
+                      aria-hidden="true"
+                    />
+                    <div className="relative z-10 flex h-full flex-col items-center justify-center gap-1.5 px-4">
+                      <span
+                        className={`inline-flex h-12 w-12 items-center justify-center rounded-full border ${
+                          isPressing
+                            ? "border-[var(--color-rose)]/60 bg-[var(--color-rose)]/10"
+                            : "border-[var(--color-rose)]/35 bg-[var(--color-navy-surface)]/60"
+                        }`}
+                      >
+                        <Fingerprint className="h-6 w-6 text-[var(--color-rose)]" aria-hidden="true" />
+                      </span>
+                      <span className="text-[10px] uppercase tracking-[0.14em] text-[var(--color-text-muted)]">
+                        {isPressing ? `Holding ${Math.round(holdProgress * 100)}%` : "Press Here"}
+                      </span>
+                      <span className={`text-sm font-semibold leading-4 ${isPressing ? "text-[var(--color-rose)]" : ""}`}>
+                        {!isQueueReady
+                          ? isJoining
+                            ? "Joining queue..."
+                            : soulGameActionCopy.joinQueue
+                          : isSubmittingPress
+                            ? "Submitting..."
+                            : isPressing
+                              ? soulGameActionCopy.releaseToSubmit
+                              : soulGameActionCopy.pressToMatch}
+                      </span>
+                      <span className="text-[11px] text-[var(--color-text-secondary)]">
+                        Test hold target: {Math.ceil(soulGameTimingConfig.minHoldMs / 1000)}s
+                      </span>
+                    </div>
+                  </button>
+                </div>
               </div>
 
               <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[var(--color-text-secondary)]">
                 <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-drawer-item-bg)] p-2">
-                  Hold {" >="} {soulGameTimingConfig.minHoldMs}ms
+                  Hold {" >="} {soulGameTimingConfig.minHoldMs}ms (test)
                 </div>
                 <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-drawer-item-bg)] p-2">
                   Session = {soulGameTimingConfig.sessionDurationMs / 60000} min

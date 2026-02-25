@@ -25,7 +25,7 @@ export interface SoulGameInlineStatusCopy {
 }
 
 export const soulGameTimingConfig: SoulGameTimingConfig = {
-  minHoldMs: 600,
+  minHoldMs: 2000,
   minOverlapMs: 350,
   maxPressDurationMs: 6000,
   queueHeartbeatMs: 15000,
@@ -80,4 +80,3 @@ export const soulGameActionCopy = {
   releaseToSubmit: "Release",
   tryAgain: "Try again",
 } as const;
-
