@@ -78,6 +78,11 @@ type SoulGameClientState = {
     estimatedWaitMs?: number;
     status: "inactive" | "queued" | "matching" | "matched";
   };
+  activeCandidateHolds?: Array<{
+    queueEntryId: string;
+    holdDurationMs: number;
+    pressStartedAt: number;
+  }>;
   activePress: {
     _id: string;
     pressStartedAt: number;
@@ -91,6 +96,7 @@ type SoulGameClientState = {
     createdAt: number;
     status: "pending_intro" | "active_2min" | "ended" | "cancelled";
     conversationEndsAt?: number | null;
+    partnerPressDurationMs?: number | null;
   } | null;
   session: {
     sessionId: string;
@@ -102,6 +108,7 @@ type SoulGameClientState = {
     };
     conversationEndsAt: number;
     effectiveSessionStatus?: "active" | "ended" | "cancelled" | null;
+    partnerPressDurationMs?: number | null;
   } | null;
 };
 
@@ -115,6 +122,11 @@ function formatCountdown(msRemaining: number) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function formatSecondsLabel(ms: number | null | undefined) {
+  if (!ms || ms <= 0) return "0.0s";
+  return `${(ms / 1000).toFixed(1)}s`;
 }
 
 function getDeterministicAvatarVariant(input: string | undefined | null, fallbackIndex = 0) {
@@ -432,6 +444,7 @@ function SoulGameRoute() {
     return true;
   });
   const availableOpponentCount = candidates.length;
+  const activeCandidateHolds = clientState?.activeCandidateHolds ?? [];
   const highlightedIndex = Math.floor((clientState?.serverNow ?? Date.now()) / soulGameTimingConfig.candidateRotateMs) % Math.max(candidates.length || 1, 1);
   const highlightedCandidate = candidates.length ? candidates[highlightedIndex] : null;
   const highlightedAvatarVariant = getBoundSoulAvatarVariant(
@@ -442,6 +455,44 @@ function SoulGameRoute() {
   const countdownMs = clientState?.session ? clientState.session.conversationEndsAt - (clientState.serverNow ?? Date.now()) : 0;
   const isQueueReady = Boolean(queueEntryId) && Boolean(clientState?.queueSnapshot.self);
   const isMatchedOrSession = localUiState === "matched" || localUiState === "session";
+  const highlightedCandidateHold = highlightedCandidate
+    ? activeCandidateHolds.find((hold) => hold.queueEntryId === highlightedCandidate.queueEntryId) ?? null
+    : null;
+  const strongestCandidateHold = activeCandidateHolds[0] ?? null;
+  const selfHoldDurationMs =
+    isPressing && pressStartedAtMs !== null ? Math.max(0, Date.now() - pressStartedAtMs) : null;
+
+  const partnerPressLabel = useMemo(() => {
+    if (clientState?.session?.partnerPressDurationMs) {
+      return `Your matching partner pressed for ${formatSecondsLabel(clientState.session.partnerPressDurationMs)}.`;
+    }
+
+    if (clientState?.matchSnapshot?.partnerPressDurationMs) {
+      return `Your matching partner pressed for ${formatSecondsLabel(clientState.matchSnapshot.partnerPressDurationMs)}.`;
+    }
+
+    if (selfHoldDurationMs) {
+      return `You have pressed for ${formatSecondsLabel(selfHoldDurationMs)}. Keep holding.`;
+    }
+
+    if (highlightedCandidate && highlightedCandidateHold) {
+      const name = highlightedCandidate.username ? `@${highlightedCandidate.username}` : "A player";
+      return `${name} has pressed for ${formatSecondsLabel(highlightedCandidateHold.holdDurationMs)}.`;
+    }
+
+    if (strongestCandidateHold) {
+      return `Someone is pressing for ${formatSecondsLabel(strongestCandidateHold.holdDurationMs)}.`;
+    }
+
+    return "When another player presses, their hold time will appear here.";
+  }, [
+    clientState?.matchSnapshot?.partnerPressDurationMs,
+    clientState?.session?.partnerPressDurationMs,
+    highlightedCandidate,
+    highlightedCandidateHold,
+    selfHoldDurationMs,
+    strongestCandidateHold,
+  ]);
 
   const handlePressStart = async (pointerId: number) => {
     if (!queueEntryId || isSubmittingPress || isMatchedOrSession) {
@@ -758,6 +809,9 @@ function SoulGameRoute() {
               <div className="mb-3 flex items-center justify-between text-xs text-[var(--color-text-secondary)]">
                 <span>Server overlap rule</span>
                 <span>{soulGameTimingConfig.minOverlapMs}ms min overlap</span>
+              </div>
+              <div className="mb-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-drawer-item-bg)] px-3 py-2 text-center text-xs text-[var(--color-text-secondary)]">
+                {partnerPressLabel}
               </div>
               <div className="mb-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-drawer-item-bg)] px-3 py-2 text-center text-xs text-[var(--color-text-secondary)]">
                 Press and hold anywhere inside the big button. Start on the thumbprint in the center.
