@@ -140,11 +140,12 @@ function getBoundSoulAvatarVariant(
 
 function SoulGameRoute() {
   const isDevDebug = import.meta.env.DEV;
-  const hasOtpAuth = otpAuthStorage.hasValidSession();
-  const otpSession = otpAuthStorage.getSession();
-  const username = storage.getUsername() ?? "you";
-  const profileUserId = storage.getUserId() ?? undefined;
   usePresenceHeartbeat();
+  const [isHydrated, setIsHydrated] = useState(false);
+  const hasOtpAuth = isHydrated ? otpAuthStorage.hasValidSession() : true;
+  const otpSession = isHydrated ? otpAuthStorage.getSession() : null;
+  const username = isHydrated ? storage.getUsername() ?? "you" : "you";
+  const profileUserId = isHydrated ? storage.getUserId() ?? undefined : undefined;
 
   const [queueEntryId, setQueueEntryId] = useState<string | null>(null);
   const [pressEventId, setPressEventId] = useState<string | null>(null);
@@ -197,6 +198,10 @@ function SoulGameRoute() {
   const { users: appOnlineUsers, error: appOnlineUsersError } = useOnlineUsers(true);
 
   useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
     if (!clientStateError) return;
     pushDebugEvent("subscription:error", {
       message: clientStateError.message,
@@ -218,12 +223,21 @@ function SoulGameRoute() {
       profileUserId: profileUserId ?? null,
     });
 
+    const joinAbortController = new AbortController();
+    const joinTimeoutId = window.setTimeout(() => {
+      pushDebugEvent("joinQueue:abortTimeout", {
+        elapsedMs: Date.now() - (joinStartedAtMs ?? Date.now()),
+        timeoutMs: 10000,
+      });
+      joinAbortController.abort();
+    }, 10000);
+
     void convexMutation<JoinQueueResult>("soulGamePresence:joinQueue", {
       authUserId: otpSession.authUserId,
       profileUserId,
       username,
       avatarId: lastLocalAvatarId,
-    })
+    }, { maxRetries: 0 }, { signal: joinAbortController.signal })
       .then((result) => {
         if (cancelled) return;
         pushDebugEvent("joinQueue:response", {
@@ -237,6 +251,7 @@ function SoulGameRoute() {
       .catch((error) => {
         if (cancelled) return;
         pushDebugEvent("joinQueue:error", {
+          name: error instanceof Error ? error.name : typeof error,
           message: error instanceof Error ? error.message : String(error),
         });
         if (import.meta.env.DEV) {
@@ -252,12 +267,15 @@ function SoulGameRoute() {
           setJoinStartedAtMs(null);
           setJoinElapsedMs(0);
         }
+        window.clearTimeout(joinTimeoutId);
       });
 
     return () => {
       cancelled = true;
+      window.clearTimeout(joinTimeoutId);
+      joinAbortController.abort();
     };
-  }, [autoJoinEnabled, hasOtpAuth, otpSession, queueEntryId, isJoining, profileUserId, username, lastLocalAvatarId]);
+  }, [autoJoinEnabled, hasOtpAuth, otpSession, queueEntryId, isJoining, profileUserId, username, lastLocalAvatarId, joinStartedAtMs]);
 
   useEffect(() => {
     if (!isJoining || joinStartedAtMs === null) {
@@ -579,6 +597,18 @@ function SoulGameRoute() {
     if (queueEntryId || isJoining || !otpSession) return;
     setAutoJoinEnabled(true);
   };
+
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen bg-[var(--color-navy-bg)] text-[var(--color-text-primary)]">
+        <div className="mx-auto flex min-h-screen w-full max-w-[430px] items-center justify-center px-4">
+          <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-navy-surface)] px-4 py-3 text-sm text-[var(--color-text-secondary)]">
+            Loading Soul Game...
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!hasOtpAuth) {
     return <Navigate to="/signin" />;
