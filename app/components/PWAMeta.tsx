@@ -10,7 +10,7 @@ interface PWAMetaProps {
 export function PWAMeta({
   title = 'eyymi - ❤️ at your hands',
   description = 'Real-time location sharing app for staying connected with friends and family',
-  themeColor = '#14B8A6',
+  themeColor = '#0f1012',
   statusBarStyle = 'black-translucent',
 }: PWAMetaProps) {
   const meta = [
@@ -191,7 +191,7 @@ export function PWAMeta({
 export function createPWAMeta({
   title = 'eyymi - ❤️ at your hands',
   description = 'Real-time location sharing app for staying connected with friends and family',
-  themeColor = '#14B8A6',
+  themeColor = '#0f1012',
   statusBarStyle = 'black-translucent',
 }: PWAMetaProps = {}) {
   return {

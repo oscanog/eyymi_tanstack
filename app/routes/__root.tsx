@@ -20,7 +20,7 @@ export const Route = createRootRoute({
       },
       {
         name: 'theme-color',
-        content: '#090C12',
+        content: '#0f1012',
       },
       {
         title: 'eyymi - ❤️ at your hands',

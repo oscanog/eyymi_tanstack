@@ -108,7 +108,7 @@ export function OnlineUsersDrawer({
         }}
       >
         <div className="safe-area-inset h-full flex flex-col px-4 py-5">
-          <div className="flex items-center justify-between">
+          <div className="mt-2 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center"

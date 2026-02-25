@@ -1,23 +1,23 @@
 @import "tailwindcss";
 
 /* ============================================
-   EYYMI Design System - Aurora Mint + Midnight Neon
+   EYYMI Design System - Minimal Dual Theme + Mint Accent
    ============================================ */
 
-/* Hybrid token set:
-   - Aurora Mint for primary/trust accents
-   - Midnight Neon for dark-first surfaces and text
+/* Final visual direction:
+   - Minimal graphite neutrals for dark/light surfaces
+   - EYYMI mint accent for identity, actions, and highlights
 */
 :root {
   /* Primary Colors */
   --color-rose: #14B8A6;
   --color-rose-light: #2DD4BF;
-  --color-rose-dark: #0F9F90;
+  --color-rose-dark: #0F766E;
   
-  /* Midnight Neon (dark-first neutrals) */
-  --color-navy-bg: #090C12;
-  --color-navy-surface: #111827;
-  --color-navy-elevated: #1A2438;
+  /* Graphite neutrals (dark default) */
+  --color-navy-bg: #0f1012;
+  --color-navy-surface: #17181b;
+  --color-navy-elevated: #1f2024;
   
   /* Semantic Colors */
   --color-success: #22C55E;
@@ -25,12 +25,12 @@
   --color-error: #EF4444;
   
   /* Text Colors */
-  --color-text-primary: #EAF2FF;
-  --color-text-secondary: #A8B7D1;
-  --color-text-muted: #7C8DAA;
+  --color-text-primary: #f5f5f5;
+  --color-text-secondary: #b3b3bb;
+  --color-text-muted: #8a8a94;
   
   /* Border Colors */
-  --color-border: rgba(234, 242, 255, 0.12);
+  --color-border: rgba(255, 255, 255, 0.1);
   --color-border-focus: #14B8A6;
 
   /* Generic aliases for future migration away from legacy variable names */
@@ -41,11 +41,11 @@
   --color-primary-pressed: var(--color-rose-dark);
 
   /* Drawer (online users sidebar) */
-  --color-drawer-surface: rgba(20, 29, 43, 0.95);
-  --color-drawer-border: rgba(255, 255, 255, 0.14);
+  --color-drawer-surface: rgba(24, 25, 28, 0.95);
+  --color-drawer-border: rgba(255, 255, 255, 0.1);
   --color-drawer-text: #ffffff;
-  --color-drawer-text-muted: #a0aec0;
-  --color-drawer-backdrop: rgba(6, 10, 17, 0.45);
+  --color-drawer-text-muted: #a1a1aa;
+  --color-drawer-backdrop: rgba(8, 8, 10, 0.5);
   --color-drawer-item-bg: rgba(255, 255, 255, 0.04);
   --color-drawer-avatar-bg: rgba(255, 255, 255, 0.08);
   --color-drawer-self-bg: rgba(20, 184, 166, 0.16);
@@ -58,40 +58,40 @@
   --color-drawer-accent-soft: rgba(20, 184, 166, 0.16);
 
   /* Modal (session invite dialogs) */
-  --color-modal-surface: rgba(20, 29, 43, 0.98);
-  --color-modal-border: rgba(255, 255, 255, 0.14);
+  --color-modal-surface: rgba(24, 25, 28, 0.98);
+  --color-modal-border: rgba(255, 255, 255, 0.1);
   --color-modal-text: #ffffff;
-  --color-modal-text-muted: #a0aec0;
+  --color-modal-text-muted: #a1a1aa;
   --color-modal-muted-bg: rgba(255, 255, 255, 0.06);
-  --color-modal-backdrop: rgba(6, 10, 17, 0.48);
+  --color-modal-backdrop: rgba(8, 8, 10, 0.52);
   --color-modal-error-bg: rgba(255, 23, 68, 0.16);
   --color-modal-error-border: rgba(255, 23, 68, 0.42);
   --color-modal-error-text: #ff97aa;
 
   /* Session details bottom sheet */
-  --color-sheet-surface: rgba(20, 29, 43, 0.96);
-  --color-sheet-border: rgba(255, 255, 255, 0.16);
+  --color-sheet-surface: rgba(24, 25, 28, 0.96);
+  --color-sheet-border: rgba(255, 255, 255, 0.12);
   --color-sheet-handle: rgba(255, 255, 255, 0.28);
   --color-sheet-tip: rgba(255, 255, 255, 0.04);
   --color-sheet-text: #ffffff;
   --color-sheet-muted: #a0aec0;
 
   /* Onboarding username suggestion */
-  --color-onboard-suggestion-surface: rgba(30, 40, 55, 0.78);
-  --color-onboard-suggestion-border: rgba(255, 255, 255, 0.18);
-  --color-onboard-suggestion-text: #cbd5e1;
+  --color-onboard-suggestion-surface: rgba(32, 33, 37, 0.86);
+  --color-onboard-suggestion-border: rgba(255, 255, 255, 0.12);
+  --color-onboard-suggestion-text: #d4d4d8;
   --color-onboard-suggestion-chip-bg: rgba(20, 184, 166, 0.14);
   --color-onboard-suggestion-chip-text: #76f5e7;
 
   /* Live route visuals */
-  --route-line-halo: rgba(244, 248, 255, 0.82);
+  --route-line-halo: rgba(255, 255, 255, 0.72);
   --route-line-core: #14b8a6;
-  --route-chip-bg: rgba(12, 22, 39, 0.74);
-  --route-chip-border: rgba(255, 255, 255, 0.24);
+  --route-chip-bg: rgba(16, 17, 20, 0.78);
+  --route-chip-border: rgba(255, 255, 255, 0.14);
   --route-chip-text: #ffffff;
-  --route-chip-muted: #b8c4d6;
+  --route-chip-muted: #b3b3bb;
   --route-line-core-mine: #14b8a6;
-  --route-line-core-partner: #ff4da6;
+  --route-line-core-partner: #8ea3ff;
   --color-meeting-accent: #12b886;
   --color-meeting-marker: #ffb300;
   --color-meeting-dialog-border: rgba(18, 184, 134, 0.34);
@@ -99,16 +99,16 @@
   --color-meeting-input-border: rgba(255, 255, 255, 0.2);
   --color-meeting-suggestion-bg: rgba(255, 255, 255, 0.04);
   --color-meeting-suggestion-border: rgba(255, 255, 255, 0.18);
-  --color-meeting-fab-bg: rgba(17, 24, 39, 0.7);
-  --color-meeting-fab-border: rgba(255, 255, 255, 0.26);
+  --color-meeting-fab-bg: rgba(24, 25, 28, 0.78);
+  --color-meeting-fab-border: rgba(255, 255, 255, 0.16);
   --color-meeting-fab-text: #f8fafc;
   --color-meeting-chip-bg: rgba(18, 184, 134, 0.16);
   --color-meeting-chip-border: rgba(18, 184, 134, 0.46);
   --color-meeting-chip-text: #d8fff2;
-  --color-camera-fab-bg: rgba(17, 24, 39, 0.52);
-  --color-camera-fab-border: rgba(255, 255, 255, 0.24);
+  --color-camera-fab-bg: rgba(24, 25, 28, 0.58);
+  --color-camera-fab-border: rgba(255, 255, 255, 0.14);
   --color-camera-fab-text: #f8fafc;
-  --color-camera-fab-active-bg: rgba(20, 184, 166, 0.22);
+  --color-camera-fab-active-bg: rgba(20, 184, 166, 0.18);
   --color-camera-fab-active-border: rgba(20, 184, 166, 0.5);
   --color-camera-fab-active-text: #b6fff6;
   
@@ -134,14 +134,23 @@
   --radius-xl: 20px;
   --radius-full: 9999px;
   
-  /* Typography Scale */
-  --text-xs: 12px;
-  --text-sm: 14px;
-  --text-base: 16px;
-  --text-lg: 18px;
+  /* Typography Scale (Android-style mobile-first sizing) */
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 14px;
+  --text-lg: 16px;
   --text-xl: 20px;
   --text-2xl: 24px;
-  --text-3xl: 30px;
+  --text-3xl: 32px;
+  --text-4xl: 36px;
+  --type-label-small: 11px;
+  --type-label-medium: 12px;
+  --type-body-medium: 14px;
+  --type-body-large: 16px;
+  --type-title-medium: 16px;
+  --type-title-large: 22px;
+  --type-headline-small: 24px;
+  --type-headline-medium: 28px;
   
   /* Safe Area Insets for Notched Phones */
   --safe-area-top: env(safe-area-inset-top, 0px);
@@ -151,22 +160,32 @@
 }
 
 :root[data-theme='light'] {
-  --color-drawer-surface: rgba(248, 251, 255, 0.98);
+  --color-rose: #0f9f90;
+  --color-rose-light: #14b8a6;
+  --color-rose-dark: #0b7c70;
+  --color-navy-bg: #f5f5f5;
+  --color-navy-surface: #ffffff;
+  --color-navy-elevated: #ececef;
+  --color-text-primary: #141417;
+  --color-text-secondary: #52525b;
+  --color-text-muted: #71717a;
+  --color-border: rgba(20, 20, 23, 0.1);
+  --color-drawer-surface: rgba(250, 250, 251, 0.98);
   --color-drawer-border: rgba(15, 23, 42, 0.14);
   --color-drawer-text: #0f172a;
   --color-drawer-text-muted: #475569;
   --color-drawer-backdrop: rgba(11, 18, 32, 0.2);
   --color-drawer-item-bg: rgba(15, 23, 42, 0.04);
   --color-drawer-avatar-bg: rgba(15, 23, 42, 0.08);
-  --color-drawer-self-bg: rgba(255, 3, 91, 0.08);
-  --color-drawer-self-border: rgba(255, 3, 91, 0.36);
+  --color-drawer-self-bg: rgba(20, 184, 166, 0.08);
+  --color-drawer-self-border: rgba(20, 184, 166, 0.36);
   --color-drawer-skeleton: rgba(15, 23, 42, 0.09);
   --color-drawer-muted-bg: rgba(15, 23, 42, 0.05);
   --color-drawer-error-bg: rgba(255, 23, 68, 0.1);
   --color-drawer-error-border: rgba(255, 23, 68, 0.24);
   --color-drawer-error-text: #b42318;
-  --color-drawer-accent-soft: rgba(255, 3, 91, 0.12);
-  --color-modal-surface: rgba(248, 251, 255, 0.98);
+  --color-drawer-accent-soft: rgba(20, 184, 166, 0.12);
+  --color-modal-surface: rgba(250, 250, 251, 0.98);
   --color-modal-border: rgba(15, 23, 42, 0.14);
   --color-modal-text: #0f172a;
   --color-modal-text-muted: #475569;
@@ -175,7 +194,7 @@
   --color-modal-error-bg: rgba(255, 23, 68, 0.1);
   --color-modal-error-border: rgba(255, 23, 68, 0.24);
   --color-modal-error-text: #b42318;
-  --color-sheet-surface: rgba(248, 251, 255, 0.98);
+  --color-sheet-surface: rgba(250, 250, 251, 0.98);
   --color-sheet-border: rgba(15, 23, 42, 0.16);
   --color-sheet-handle: rgba(15, 23, 42, 0.28);
   --color-sheet-tip: rgba(15, 23, 42, 0.05);
@@ -184,16 +203,16 @@
   --color-onboard-suggestion-surface: rgba(255, 255, 255, 0.92);
   --color-onboard-suggestion-border: rgba(15, 23, 42, 0.16);
   --color-onboard-suggestion-text: #334155;
-  --color-onboard-suggestion-chip-bg: rgba(255, 3, 91, 0.1);
-  --color-onboard-suggestion-chip-text: #b20042;
-  --route-line-halo: rgba(9, 23, 47, 0.52);
-  --route-line-core: #0078ff;
-  --route-chip-bg: rgba(248, 251, 255, 0.9);
+  --color-onboard-suggestion-chip-bg: rgba(20, 184, 166, 0.1);
+  --color-onboard-suggestion-chip-text: #0f6e66;
+  --route-line-halo: rgba(19, 20, 24, 0.45);
+  --route-line-core: #14b8a6;
+  --route-chip-bg: rgba(255, 255, 255, 0.92);
   --route-chip-border: rgba(15, 23, 42, 0.2);
   --route-chip-text: #0f172a;
   --route-chip-muted: #334155;
-  --route-line-core-mine: #0078ff;
-  --route-line-core-partner: #f97316;
+  --route-line-core-mine: #14b8a6;
+  --route-line-core-partner: #6b7280;
   --color-meeting-accent: #0ea271;
   --color-meeting-marker: #f59e0b;
   --color-meeting-dialog-border: rgba(14, 162, 113, 0.3);
@@ -201,64 +220,74 @@
   --color-meeting-input-border: rgba(15, 23, 42, 0.16);
   --color-meeting-suggestion-bg: rgba(15, 23, 42, 0.03);
   --color-meeting-suggestion-border: rgba(15, 23, 42, 0.14);
-  --color-meeting-fab-bg: rgba(248, 251, 255, 0.76);
+  --color-meeting-fab-bg: rgba(255, 255, 255, 0.82);
   --color-meeting-fab-border: rgba(15, 23, 42, 0.2);
   --color-meeting-fab-text: #0f172a;
   --color-meeting-chip-bg: rgba(14, 162, 113, 0.14);
   --color-meeting-chip-border: rgba(14, 162, 113, 0.34);
   --color-meeting-chip-text: #0f4b39;
-  --color-camera-fab-bg: rgba(248, 251, 255, 0.7);
+  --color-camera-fab-bg: rgba(255, 255, 255, 0.8);
   --color-camera-fab-border: rgba(15, 23, 42, 0.2);
   --color-camera-fab-text: #0f172a;
-  --color-camera-fab-active-bg: rgba(0, 120, 255, 0.14);
-  --color-camera-fab-active-border: rgba(0, 120, 255, 0.4);
-  --color-camera-fab-active-text: #0f3c8a;
+  --color-camera-fab-active-bg: rgba(20, 184, 166, 0.12);
+  --color-camera-fab-active-border: rgba(20, 184, 166, 0.34);
+  --color-camera-fab-active-text: #0b665d;
 }
 
 :root[data-theme='dark'] {
-  --color-drawer-surface: rgba(20, 29, 43, 0.95);
-  --color-drawer-border: rgba(255, 255, 255, 0.14);
+  --color-rose: #14b8a6;
+  --color-rose-light: #2dd4bf;
+  --color-rose-dark: #0f766e;
+  --color-navy-bg: #0f1012;
+  --color-navy-surface: #17181b;
+  --color-navy-elevated: #1f2024;
+  --color-text-primary: #f5f5f5;
+  --color-text-secondary: #b3b3bb;
+  --color-text-muted: #8a8a94;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-drawer-surface: rgba(24, 25, 28, 0.95);
+  --color-drawer-border: rgba(255, 255, 255, 0.1);
   --color-drawer-text: #ffffff;
-  --color-drawer-text-muted: #a0aec0;
-  --color-drawer-backdrop: rgba(6, 10, 17, 0.45);
+  --color-drawer-text-muted: #a1a1aa;
+  --color-drawer-backdrop: rgba(8, 8, 10, 0.5);
   --color-drawer-item-bg: rgba(255, 255, 255, 0.04);
   --color-drawer-avatar-bg: rgba(255, 255, 255, 0.08);
-  --color-drawer-self-bg: rgba(255, 3, 91, 0.16);
-  --color-drawer-self-border: rgba(255, 3, 91, 0.42);
+  --color-drawer-self-bg: rgba(20, 184, 166, 0.16);
+  --color-drawer-self-border: rgba(20, 184, 166, 0.42);
   --color-drawer-skeleton: rgba(255, 255, 255, 0.08);
   --color-drawer-muted-bg: rgba(255, 255, 255, 0.06);
   --color-drawer-error-bg: rgba(255, 23, 68, 0.16);
   --color-drawer-error-border: rgba(255, 23, 68, 0.42);
   --color-drawer-error-text: #ff97aa;
-  --color-drawer-accent-soft: rgba(255, 3, 91, 0.16);
-  --color-modal-surface: rgba(20, 29, 43, 0.98);
-  --color-modal-border: rgba(255, 255, 255, 0.14);
+  --color-drawer-accent-soft: rgba(20, 184, 166, 0.16);
+  --color-modal-surface: rgba(24, 25, 28, 0.98);
+  --color-modal-border: rgba(255, 255, 255, 0.1);
   --color-modal-text: #ffffff;
-  --color-modal-text-muted: #a0aec0;
+  --color-modal-text-muted: #a1a1aa;
   --color-modal-muted-bg: rgba(255, 255, 255, 0.06);
-  --color-modal-backdrop: rgba(6, 10, 17, 0.48);
+  --color-modal-backdrop: rgba(8, 8, 10, 0.52);
   --color-modal-error-bg: rgba(255, 23, 68, 0.16);
   --color-modal-error-border: rgba(255, 23, 68, 0.42);
   --color-modal-error-text: #ff97aa;
-  --color-sheet-surface: rgba(20, 29, 43, 0.96);
-  --color-sheet-border: rgba(255, 255, 255, 0.16);
+  --color-sheet-surface: rgba(24, 25, 28, 0.96);
+  --color-sheet-border: rgba(255, 255, 255, 0.12);
   --color-sheet-handle: rgba(255, 255, 255, 0.28);
   --color-sheet-tip: rgba(255, 255, 255, 0.04);
   --color-sheet-text: #ffffff;
   --color-sheet-muted: #a0aec0;
-  --color-onboard-suggestion-surface: rgba(30, 40, 55, 0.78);
-  --color-onboard-suggestion-border: rgba(255, 255, 255, 0.18);
-  --color-onboard-suggestion-text: #cbd5e1;
-  --color-onboard-suggestion-chip-bg: rgba(255, 3, 91, 0.14);
-  --color-onboard-suggestion-chip-text: #ff7fa9;
-  --route-line-halo: rgba(244, 248, 255, 0.82);
-  --route-line-core: #00d4ff;
-  --route-chip-bg: rgba(12, 22, 39, 0.74);
-  --route-chip-border: rgba(255, 255, 255, 0.24);
+  --color-onboard-suggestion-surface: rgba(32, 33, 37, 0.86);
+  --color-onboard-suggestion-border: rgba(255, 255, 255, 0.12);
+  --color-onboard-suggestion-text: #d4d4d8;
+  --color-onboard-suggestion-chip-bg: rgba(20, 184, 166, 0.14);
+  --color-onboard-suggestion-chip-text: #7ef5e8;
+  --route-line-halo: rgba(255, 255, 255, 0.72);
+  --route-line-core: #14b8a6;
+  --route-chip-bg: rgba(16, 17, 20, 0.78);
+  --route-chip-border: rgba(255, 255, 255, 0.14);
   --route-chip-text: #ffffff;
-  --route-chip-muted: #b8c4d6;
-  --route-line-core-mine: #00d4ff;
-  --route-line-core-partner: #ff8a5b;
+  --route-chip-muted: #b3b3bb;
+  --route-line-core-mine: #14b8a6;
+  --route-line-core-partner: #8ea3ff;
   --color-meeting-accent: #12b886;
   --color-meeting-marker: #ffb300;
   --color-meeting-dialog-border: rgba(18, 184, 134, 0.34);
@@ -266,38 +295,48 @@
   --color-meeting-input-border: rgba(255, 255, 255, 0.2);
   --color-meeting-suggestion-bg: rgba(255, 255, 255, 0.04);
   --color-meeting-suggestion-border: rgba(255, 255, 255, 0.18);
-  --color-meeting-fab-bg: rgba(15, 26, 45, 0.62);
-  --color-meeting-fab-border: rgba(255, 255, 255, 0.26);
+  --color-meeting-fab-bg: rgba(24, 25, 28, 0.78);
+  --color-meeting-fab-border: rgba(255, 255, 255, 0.16);
   --color-meeting-fab-text: #f8fafc;
   --color-meeting-chip-bg: rgba(18, 184, 134, 0.16);
   --color-meeting-chip-border: rgba(18, 184, 134, 0.46);
   --color-meeting-chip-text: #d8fff2;
-  --color-camera-fab-bg: rgba(15, 26, 45, 0.45);
-  --color-camera-fab-border: rgba(255, 255, 255, 0.24);
+  --color-camera-fab-bg: rgba(24, 25, 28, 0.58);
+  --color-camera-fab-border: rgba(255, 255, 255, 0.14);
   --color-camera-fab-text: #f8fafc;
-  --color-camera-fab-active-bg: rgba(0, 212, 255, 0.22);
-  --color-camera-fab-active-border: rgba(0, 212, 255, 0.5);
-  --color-camera-fab-active-text: #c8f5ff;
+  --color-camera-fab-active-bg: rgba(20, 184, 166, 0.18);
+  --color-camera-fab-active-border: rgba(20, 184, 166, 0.5);
+  --color-camera-fab-active-text: #c8fff7;
 }
 
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) {
-    --color-drawer-surface: rgba(248, 251, 255, 0.98);
+    --color-rose: #0f9f90;
+    --color-rose-light: #14b8a6;
+    --color-rose-dark: #0b7c70;
+    --color-navy-bg: #f5f5f5;
+    --color-navy-surface: #ffffff;
+    --color-navy-elevated: #ececef;
+    --color-text-primary: #141417;
+    --color-text-secondary: #52525b;
+    --color-text-muted: #71717a;
+    --color-border: rgba(20, 20, 23, 0.1);
+    --color-drawer-surface: rgba(250, 250, 251, 0.98);
     --color-drawer-border: rgba(15, 23, 42, 0.14);
     --color-drawer-text: #0f172a;
     --color-drawer-text-muted: #475569;
     --color-drawer-backdrop: rgba(11, 18, 32, 0.2);
     --color-drawer-item-bg: rgba(15, 23, 42, 0.04);
     --color-drawer-avatar-bg: rgba(15, 23, 42, 0.08);
-    --color-drawer-self-bg: rgba(255, 3, 91, 0.08);
-    --color-drawer-self-border: rgba(255, 3, 91, 0.36);
+    --color-drawer-self-bg: rgba(20, 184, 166, 0.08);
+    --color-drawer-self-border: rgba(20, 184, 166, 0.36);
     --color-drawer-skeleton: rgba(15, 23, 42, 0.09);
     --color-drawer-muted-bg: rgba(15, 23, 42, 0.05);
     --color-drawer-error-bg: rgba(255, 23, 68, 0.1);
     --color-drawer-error-border: rgba(255, 23, 68, 0.24);
     --color-drawer-error-text: #b42318;
-    --color-drawer-accent-soft: rgba(255, 3, 91, 0.12);
-    --color-modal-surface: rgba(248, 251, 255, 0.98);
+    --color-drawer-accent-soft: rgba(20, 184, 166, 0.12);
+    --color-modal-surface: rgba(250, 250, 251, 0.98);
     --color-modal-border: rgba(15, 23, 42, 0.14);
     --color-modal-text: #0f172a;
     --color-modal-text-muted: #475569;
@@ -306,7 +345,7 @@
     --color-modal-error-bg: rgba(255, 23, 68, 0.1);
     --color-modal-error-border: rgba(255, 23, 68, 0.24);
     --color-modal-error-text: #b42318;
-    --color-sheet-surface: rgba(248, 251, 255, 0.98);
+    --color-sheet-surface: rgba(250, 250, 251, 0.98);
     --color-sheet-border: rgba(15, 23, 42, 0.16);
     --color-sheet-handle: rgba(15, 23, 42, 0.28);
     --color-sheet-tip: rgba(15, 23, 42, 0.05);
@@ -315,16 +354,16 @@
     --color-onboard-suggestion-surface: rgba(255, 255, 255, 0.92);
     --color-onboard-suggestion-border: rgba(15, 23, 42, 0.16);
     --color-onboard-suggestion-text: #334155;
-    --color-onboard-suggestion-chip-bg: rgba(255, 3, 91, 0.1);
-    --color-onboard-suggestion-chip-text: #b20042;
-    --route-line-halo: rgba(9, 23, 47, 0.52);
-    --route-line-core: #0078ff;
-    --route-chip-bg: rgba(248, 251, 255, 0.9);
+    --color-onboard-suggestion-chip-bg: rgba(20, 184, 166, 0.1);
+    --color-onboard-suggestion-chip-text: #0f6e66;
+    --route-line-halo: rgba(19, 20, 24, 0.45);
+    --route-line-core: #14b8a6;
+    --route-chip-bg: rgba(255, 255, 255, 0.92);
     --route-chip-border: rgba(15, 23, 42, 0.2);
     --route-chip-text: #0f172a;
     --route-chip-muted: #334155;
-    --route-line-core-mine: #0078ff;
-    --route-line-core-partner: #f97316;
+    --route-line-core-mine: #14b8a6;
+    --route-line-core-partner: #6b7280;
     --color-meeting-accent: #0ea271;
     --color-meeting-marker: #f59e0b;
     --color-meeting-dialog-border: rgba(14, 162, 113, 0.3);
@@ -332,18 +371,18 @@
     --color-meeting-input-border: rgba(15, 23, 42, 0.16);
     --color-meeting-suggestion-bg: rgba(15, 23, 42, 0.03);
     --color-meeting-suggestion-border: rgba(15, 23, 42, 0.14);
-    --color-meeting-fab-bg: rgba(248, 251, 255, 0.76);
+    --color-meeting-fab-bg: rgba(255, 255, 255, 0.82);
     --color-meeting-fab-border: rgba(15, 23, 42, 0.2);
     --color-meeting-fab-text: #0f172a;
     --color-meeting-chip-bg: rgba(14, 162, 113, 0.14);
     --color-meeting-chip-border: rgba(14, 162, 113, 0.34);
     --color-meeting-chip-text: #0f4b39;
-    --color-camera-fab-bg: rgba(248, 251, 255, 0.7);
+    --color-camera-fab-bg: rgba(255, 255, 255, 0.8);
     --color-camera-fab-border: rgba(15, 23, 42, 0.2);
     --color-camera-fab-text: #0f172a;
-    --color-camera-fab-active-bg: rgba(0, 120, 255, 0.14);
-    --color-camera-fab-active-border: rgba(0, 120, 255, 0.4);
-    --color-camera-fab-active-text: #0f3c8a;
+    --color-camera-fab-active-bg: rgba(20, 184, 166, 0.12);
+    --color-camera-fab-active-border: rgba(20, 184, 166, 0.34);
+    --color-camera-fab-active-text: #0b665d;
   }
 }
 
@@ -357,8 +396,7 @@ html {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family: Roboto, "Noto Sans", "Segoe UI", system-ui, sans-serif;
   background-color: var(--color-navy-bg);
   color: var(--color-text-primary);
   font-size: var(--text-base);
@@ -682,7 +720,7 @@ a,
   width: 220px;
   height: 220px;
   border-radius: 9999px;
-  background: radial-gradient(circle, rgba(255, 3, 91, 0.26) 0%, rgba(255, 3, 91, 0) 70%);
+  background: radial-gradient(circle, rgba(20, 184, 166, 0.24) 0%, rgba(20, 184, 166, 0) 70%);
   pointer-events: none;
 }
 
@@ -708,8 +746,8 @@ a,
   font-size: 14px;
   font-weight: 700;
   color: var(--color-rose);
-  background: rgba(255, 3, 91, 0.12);
-  border: 1px solid rgba(255, 3, 91, 0.32);
+  background: rgba(20, 184, 166, 0.12);
+  border: 1px solid rgba(20, 184, 166, 0.32);
 }
 
 .identity-recovery-primary-btn,
