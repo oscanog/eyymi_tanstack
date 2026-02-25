@@ -1,4 +1,4 @@
-import { Navigate, createFileRoute } from "@tanstack/react-router";
+import { Navigate, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { otpAuthStorage } from "@/lib/otpAuth";
 import { storage } from "@/lib/storage";
 import {
@@ -25,6 +25,7 @@ export const Route = createFileRoute("/welcome")({
 });
 
 function WelcomePlaceholderPage() {
+  const navigate = useNavigate();
   const username = storage.getUsername();
   const hasOtpAuth = otpAuthStorage.hasValidSession();
 
@@ -68,9 +69,20 @@ function WelcomePlaceholderPage() {
                     : PartyMatchIcon;
 
               return (
-                <div
+                <button
                   key={card.id}
-                  className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-navy-surface)] p-3 shadow-[0_10px_24px_rgba(0,0,0,0.16)]"
+                  type="button"
+                  onClick={() => {
+                    if (card.icon === "soul") {
+                      navigate({ to: "/soul_game" });
+                    }
+                  }}
+                  className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-navy-surface)] p-3 text-left shadow-[0_10px_24px_rgba(0,0,0,0.16)]"
+                  aria-label={
+                    card.icon === "soul"
+                      ? "Open Soul game"
+                      : `${card.title} (coming soon)`
+                  }
                 >
                   <div className="mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-drawer-item-bg)]">
                     <Icon className="h-10 w-10" />
@@ -79,7 +91,7 @@ function WelcomePlaceholderPage() {
                   <p className="mt-0.5 text-[11px] leading-4 text-[var(--color-text-secondary)]">
                     {card.statLabel}
                   </p>
-                </div>
+                </button>
               );
             })}
           </section>
