@@ -1,12 +1,8 @@
 import { Navigate, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { otpAuthStorage } from "@/lib/otpAuth";
 import { storage } from "@/lib/storage";
+import { AppBottomNav } from "@/components/navigation/AppBottomNav";
 import {
-  BottomChatIcon,
-  BottomHomeIcon,
-  BottomMicIcon,
-  BottomOrbitIcon,
-  BottomProfileIcon,
   CommunityAvatarIcon,
   FilterSlidersIcon,
   PartyMatchIcon,
@@ -140,49 +136,7 @@ function WelcomePlaceholderPage() {
           </section>
         </main>
 
-        <footer className="safe-area-bottom fixed bottom-0 left-1/2 w-full max-w-[430px] -translate-x-1/2 px-4 pb-3">
-          <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-navy-surface)]/95 p-2 backdrop-blur-md">
-            <div className="grid grid-cols-5 gap-1">
-              {[
-                { key: "home", label: "Home", icon: BottomHomeIcon, active: true },
-                { key: "voice", label: "Voice", icon: BottomMicIcon, active: false },
-                { key: "match", label: "Match", icon: BottomOrbitIcon, active: false },
-                { key: "chat", label: "Chat", icon: BottomChatIcon, active: false, badge: 4 },
-                { key: "me", label: "Me", icon: BottomProfileIcon, active: false },
-              ].map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    className="relative flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-xl"
-                    aria-label={`${item.label} (placeholder)`}
-                  >
-                    <span
-                      className={`inline-flex h-8 w-8 items-center justify-center rounded-xl ${
-                        item.active ? "bg-[var(--color-drawer-item-bg)] text-[var(--color-rose)]" : "text-[var(--color-text-secondary)]"
-                      }`}
-                    >
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <span
-                      className={`text-[10px] ${
-                        item.active ? "text-[var(--color-rose)]" : "text-[var(--color-text-muted)]"
-                      }`}
-                    >
-                      {item.label}
-                    </span>
-                    {item.badge ? (
-                      <span className="absolute right-2 top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-[var(--color-error)] px-1 text-[10px] font-semibold text-white">
-                        {item.badge}
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </footer>
+        <AppBottomNav activeTab="home" chatBadgeCount={4} />
       </div>
     </div>
   );
