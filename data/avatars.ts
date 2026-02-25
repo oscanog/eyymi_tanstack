@@ -1,6 +1,8 @@
+import type { SoulAvatarVariant } from "../app/components/icons";
+
 export interface SoulGameAvatarMeta {
   id: string;
-  iconKey: string;
+  iconKey: SoulAvatarVariant;
   label: string;
   accentToken:
     | "--color-rose"
@@ -30,6 +32,16 @@ export const soulGameAvatarCatalog: SoulGameAvatarMeta[] = [
   { id: "soul-ava-10", iconKey: "soulAvatar10", label: "Loop Pup", accentToken: "--color-text-secondary", moodTag: "calm" },
 ];
 
+export function getSoulGameAvatarById(id: string | undefined | null): SoulGameAvatarMeta | null {
+  if (!id) return null;
+  return soulGameAvatarCatalog.find((avatar) => avatar.id === id) ?? null;
+}
+
+export function getSoulGameAvatarByIconKey(iconKey: SoulAvatarVariant | undefined | null): SoulGameAvatarMeta | null {
+  if (!iconKey) return null;
+  return soulGameAvatarCatalog.find((avatar) => avatar.iconKey === iconKey) ?? null;
+}
+
 export const onboardingAvatarCatalog: OnboardingAvatarMeta[] = Array.from({ length: 20 }, (_, index) => ({
   id: `onboard-ava-${String(index + 1).padStart(2, "0")}`,
   iconKey: `onboardingAvatar${String(index + 1).padStart(2, "0")}`,
@@ -48,4 +60,3 @@ export const onboardingAvatarSelectionConfig = {
   avoidImmediateRepeatWindow: 5,
   minTouchTargetPx: 44,
 } as const;
-

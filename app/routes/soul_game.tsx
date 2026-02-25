@@ -1,12 +1,18 @@
 import { Navigate, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CommunityAvatarIcon, SoulGameIcon } from "@/components/icons";
+import {
+  resolveSoulAvatarVariant,
+  SoulAvatarIcon,
+  SoulGameIcon,
+  getSoulAvatarVariantByIndex,
+} from "@/components/icons";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { useConvexSubscription } from "@/hooks";
 import { convexMutation } from "@/lib/convex";
 import { otpAuthStorage } from "@/lib/otpAuth";
 import { storage } from "@/lib/storage";
 import {
+  getSoulGameAvatarById,
   soulGameActionCopy,
   soulGameAvatarCatalog,
   soulGameTimingConfig,
@@ -101,6 +107,27 @@ function formatCountdown(msRemaining: number) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function getDeterministicAvatarVariant(input: string | undefined | null, fallbackIndex = 0) {
+  if (!input) return getSoulAvatarVariantByIndex(fallbackIndex);
+  let hash = 0;
+  for (let i = 0; i < input.length; i++) {
+    hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
+  }
+  return getSoulAvatarVariantByIndex(hash % 10);
+}
+
+function getBoundSoulAvatarVariant(
+  avatarId: string | undefined | null,
+  fallbackInput: string | undefined | null,
+  fallbackIndex = 0,
+) {
+  const meta = getSoulGameAvatarById(avatarId);
+  if (meta) {
+    return resolveSoulAvatarVariant(meta.iconKey, fallbackIndex);
+  }
+  return getDeterministicAvatarVariant(fallbackInput, fallbackIndex);
 }
 
 function SoulGameRoute() {
@@ -255,6 +282,11 @@ function SoulGameRoute() {
   const candidates = clientState?.queueSnapshot.onlineCandidates ?? [];
   const highlightedIndex = Math.floor((clientState?.serverNow ?? Date.now()) / soulGameTimingConfig.candidateRotateMs) % Math.max(candidates.length || 1, 1);
   const highlightedCandidate = candidates.length ? candidates[highlightedIndex] : null;
+  const highlightedAvatarVariant = getBoundSoulAvatarVariant(
+    highlightedCandidate?.avatarId,
+    highlightedCandidate?.queueEntryId ?? highlightedCandidate?.username,
+    highlightedIndex,
+  );
   const countdownMs = clientState?.session ? clientState.session.conversationEndsAt - (clientState.serverNow ?? Date.now()) : 0;
   const isQueueReady = Boolean(queueEntryId) && Boolean(clientState?.queueSnapshot.self);
   const isMatchedOrSession = localUiState === "matched" || localUiState === "session";
@@ -413,20 +445,47 @@ function SoulGameRoute() {
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-5 gap-2">
+            <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-drawer-item-bg)] p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
+                    Rotating focus
+                  </p>
+                  <p className="mt-1 text-sm font-medium">
+                    {highlightedCandidate?.username ? `@${highlightedCandidate.username}` : "Waiting for players"}
+                  </p>
+                </div>
+                <div className="relative">
+                  <span
+                    className="absolute inset-[-6px] rounded-full bg-[radial-gradient(circle,rgba(20,184,166,0.18)_0%,rgba(20,184,166,0)_70%)] motion-safe:animate-pulse"
+                    aria-hidden="true"
+                  />
+                  <div className="relative rounded-full border border-[var(--color-rose)]/40 bg-[var(--color-navy-surface)] p-1.5">
+                    <SoulAvatarIcon variant={highlightedAvatarVariant} className="h-14 w-14" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-3 grid grid-cols-5 gap-2">
               {Array.from({ length: 5 }).map((_, index) => {
                 const candidate = candidates[index];
                 const isHighlighted = highlightedCandidate?.queueEntryId === candidate?.queueEntryId;
+                const avatarVariant = getBoundSoulAvatarVariant(
+                  candidate?.avatarId,
+                  candidate?.queueEntryId ?? candidate?.username,
+                  index,
+                );
                 return (
                   <div
                     key={candidate?.queueEntryId ?? `placeholder-${index}`}
                     className={`rounded-2xl border p-2 text-center transition motion-reduce:transition-none ${
                       isHighlighted
-                        ? "border-[var(--color-rose)] bg-[var(--color-rose)]/10"
+                        ? "scale-[1.03] border-[var(--color-rose)] bg-[var(--color-rose)]/10"
                         : "border-[var(--color-border)] bg-[var(--color-drawer-item-bg)]"
                     }`}
                   >
-                    <CommunityAvatarIcon seed={(index % 6) + 1} className="mx-auto h-10 w-10" />
+                    <SoulAvatarIcon variant={avatarVariant} className="mx-auto h-10 w-10" />
                     <p className="mt-1 truncate text-[10px] text-[var(--color-text-secondary)]">
                       {candidate?.username ? `@${candidate.username}` : "Waiting"}
                     </p>
