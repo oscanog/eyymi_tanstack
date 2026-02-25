@@ -21,6 +21,7 @@ import { Route as SessionListRouteImport } from './routes/session/list'
 import { Route as SessionJoinRouteImport } from './routes/session/join'
 import { Route as SessionCreateRouteImport } from './routes/session/create'
 import { Route as MapSessionIdRouteImport } from './routes/map.$sessionId'
+import { Route as Soul_gameChatSessionIdRouteImport } from './routes/soul_game.chat.$sessionId'
 
 const WelcomeRoute = WelcomeRouteImport.update({
   id: '/welcome',
@@ -82,6 +83,11 @@ const MapSessionIdRoute = MapSessionIdRouteImport.update({
   path: '/map/$sessionId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const Soul_gameChatSessionIdRoute = Soul_gameChatSessionIdRouteImport.update({
+  id: '/chat/$sessionId',
+  path: '/chat/$sessionId',
+  getParentRoute: () => Soul_gameRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -89,26 +95,28 @@ export interface FileRoutesByFullPath {
   '/session': typeof SessionRouteWithChildren
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
-  '/soul_game': typeof Soul_gameRoute
+  '/soul_game': typeof Soul_gameRouteWithChildren
   '/welcome': typeof WelcomeRoute
   '/map/$sessionId': typeof MapSessionIdRoute
   '/session/create': typeof SessionCreateRoute
   '/session/join': typeof SessionJoinRoute
   '/session/list': typeof SessionListRoute
   '/session/': typeof SessionIndexRoute
+  '/soul_game/chat/$sessionId': typeof Soul_gameChatSessionIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
-  '/soul_game': typeof Soul_gameRoute
+  '/soul_game': typeof Soul_gameRouteWithChildren
   '/welcome': typeof WelcomeRoute
   '/map/$sessionId': typeof MapSessionIdRoute
   '/session/create': typeof SessionCreateRoute
   '/session/join': typeof SessionJoinRoute
   '/session/list': typeof SessionListRoute
   '/session': typeof SessionIndexRoute
+  '/soul_game/chat/$sessionId': typeof Soul_gameChatSessionIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -117,13 +125,14 @@ export interface FileRoutesById {
   '/session': typeof SessionRouteWithChildren
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
-  '/soul_game': typeof Soul_gameRoute
+  '/soul_game': typeof Soul_gameRouteWithChildren
   '/welcome': typeof WelcomeRoute
   '/map/$sessionId': typeof MapSessionIdRoute
   '/session/create': typeof SessionCreateRoute
   '/session/join': typeof SessionJoinRoute
   '/session/list': typeof SessionListRoute
   '/session/': typeof SessionIndexRoute
+  '/soul_game/chat/$sessionId': typeof Soul_gameChatSessionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
     | '/session/join'
     | '/session/list'
     | '/session/'
+    | '/soul_game/chat/$sessionId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -153,6 +163,7 @@ export interface FileRouteTypes {
     | '/session/join'
     | '/session/list'
     | '/session'
+    | '/soul_game/chat/$sessionId'
   id:
     | '__root__'
     | '/'
@@ -167,6 +178,7 @@ export interface FileRouteTypes {
     | '/session/join'
     | '/session/list'
     | '/session/'
+    | '/soul_game/chat/$sessionId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -175,7 +187,7 @@ export interface RootRouteChildren {
   SessionRoute: typeof SessionRouteWithChildren
   SigninRoute: typeof SigninRoute
   SignupRoute: typeof SignupRoute
-  Soul_gameRoute: typeof Soul_gameRoute
+  Soul_gameRoute: typeof Soul_gameRouteWithChildren
   WelcomeRoute: typeof WelcomeRoute
   MapSessionIdRoute: typeof MapSessionIdRoute
 }
@@ -266,6 +278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MapSessionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/soul_game/chat/$sessionId': {
+      id: '/soul_game/chat/$sessionId'
+      path: '/chat/$sessionId'
+      fullPath: '/soul_game/chat/$sessionId'
+      preLoaderRoute: typeof Soul_gameChatSessionIdRouteImport
+      parentRoute: typeof Soul_gameRoute
+    }
   }
 }
 
@@ -286,13 +305,25 @@ const SessionRouteChildren: SessionRouteChildren = {
 const SessionRouteWithChildren =
   SessionRoute._addFileChildren(SessionRouteChildren)
 
+interface Soul_gameRouteChildren {
+  Soul_gameChatSessionIdRoute: typeof Soul_gameChatSessionIdRoute
+}
+
+const Soul_gameRouteChildren: Soul_gameRouteChildren = {
+  Soul_gameChatSessionIdRoute: Soul_gameChatSessionIdRoute,
+}
+
+const Soul_gameRouteWithChildren = Soul_gameRoute._addFileChildren(
+  Soul_gameRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   SessionRoute: SessionRouteWithChildren,
   SigninRoute: SigninRoute,
   SignupRoute: SignupRoute,
-  Soul_gameRoute: Soul_gameRoute,
+  Soul_gameRoute: Soul_gameRouteWithChildren,
   WelcomeRoute: WelcomeRoute,
   MapSessionIdRoute: MapSessionIdRoute,
 }

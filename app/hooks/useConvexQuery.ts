@@ -95,17 +95,23 @@ export function useConvexMutation<T, A extends Record<string, unknown> = Record<
 export function useConvexSubscription<T>(
   path: string,
   args: Record<string, unknown> = {},
-  interval: number = 2000
+  interval: number = 2000,
+  enabled: boolean = true,
 ): QueryState<T> {
   const [state, setState] = useState<QueryState<T>>({
     data: null,
-    isLoading: true,
+    isLoading: enabled,
     error: null,
   })
 
   const cleanupRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
+    if (!enabled) {
+      setState({ data: null, isLoading: false, error: null })
+      return
+    }
+
     setState(prev => ({ ...prev, isLoading: true, error: null }))
 
     const cleanup = subscribeConvexQuery<T>(
@@ -126,7 +132,7 @@ export function useConvexSubscription<T>(
       cleanup()
       cleanupRef.current = null
     }
-  }, [path, JSON.stringify(args), interval])
+  }, [path, JSON.stringify(args), interval, enabled])
 
   return state
 }

@@ -1,4 +1,4 @@
-import { Navigate, createFileRoute } from "@tanstack/react-router";
+import { Navigate, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Fingerprint } from "lucide-react";
 import {
@@ -152,6 +152,7 @@ function getBoundSoulAvatarVariant(
 
 function SoulGameRoute() {
   const isDevDebug = import.meta.env.DEV;
+  const navigate = useNavigate();
   usePresenceHeartbeat();
   const [isHydrated, setIsHydrated] = useState(false);
   const hasOtpAuth = isHydrated ? otpAuthStorage.hasValidSession() : true;
@@ -183,6 +184,7 @@ function SoulGameRoute() {
   >(null);
   const heartbeatTimerRef = useRef<number | null>(null);
   const activePointerIdRef = useRef<number | null>(null);
+  const redirectedSessionIdRef = useRef<string | null>(null);
   const debugSeqRef = useRef(0);
   const lastLocalAvatarId = useMemo(() => soulGameAvatarCatalog[0]?.id ?? "soul-ava-01", []);
 
@@ -426,6 +428,33 @@ function SoulGameRoute() {
 
     setLocalUiState("idle");
   }, [clientState, isPressing]);
+
+  useEffect(() => {
+    const session = clientState?.session;
+    if (!session || !queueEntryId) return;
+    const effectiveStatus = session.effectiveSessionStatus ?? "active";
+    const isActive = effectiveStatus === "active" && session.conversationEndsAt > (clientState?.serverNow ?? Date.now());
+    if (!isActive) return;
+    if (redirectedSessionIdRef.current === session.sessionId) return;
+
+    redirectedSessionIdRef.current = session.sessionId;
+    pushDebugEvent("chat:navigate", {
+      sessionId: session.sessionId,
+      queueEntryId,
+    });
+
+    void navigate({
+      to: "/soul_game/chat/$sessionId",
+      params: { sessionId: session.sessionId },
+      search: { queueEntryId },
+      replace: true,
+    });
+  }, [
+    clientState?.serverNow,
+    clientState?.session,
+    navigate,
+    queueEntryId,
+  ]);
 
   const inlineMessage = useMemo(() => {
     if (inlineErrorCode) {
