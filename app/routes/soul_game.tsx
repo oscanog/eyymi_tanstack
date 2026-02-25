@@ -154,6 +154,8 @@ function SoulGameRoute() {
   const [isSubmittingPress, setIsSubmittingPress] = useState(false);
   const [pressStartedAtMs, setPressStartedAtMs] = useState<number | null>(null);
   const [holdProgress, setHoldProgress] = useState(0);
+  const [joinStartedAtMs, setJoinStartedAtMs] = useState<number | null>(null);
+  const [joinElapsedMs, setJoinElapsedMs] = useState(0);
   const [debugEvents, setDebugEvents] = useState<SoulGameDebugEvent[]>([]);
   const [localUiState, setLocalUiState] = useState<SoulGameUiStateKey>("idle");
   const [inlineErrorCode, setInlineErrorCode] = useState<
@@ -207,6 +209,8 @@ function SoulGameRoute() {
 
     let cancelled = false;
     setIsJoining(true);
+    setJoinStartedAtMs(Date.now());
+    setJoinElapsedMs(0);
     setInlineErrorCode(null);
     pushDebugEvent("joinQueue:request", {
       username,
@@ -243,13 +247,42 @@ function SoulGameRoute() {
         setLocalUiState("error");
       })
       .finally(() => {
-        if (!cancelled) setIsJoining(false);
+        if (!cancelled) {
+          setIsJoining(false);
+          setJoinStartedAtMs(null);
+          setJoinElapsedMs(0);
+        }
       });
 
     return () => {
       cancelled = true;
     };
   }, [autoJoinEnabled, hasOtpAuth, otpSession, queueEntryId, isJoining, profileUserId, username, lastLocalAvatarId]);
+
+  useEffect(() => {
+    if (!isJoining || joinStartedAtMs === null) {
+      setJoinElapsedMs(0);
+      return;
+    }
+
+    let hasWarnedSlow = false;
+    const intervalId = window.setInterval(() => {
+      const elapsed = Date.now() - joinStartedAtMs;
+      setJoinElapsedMs(elapsed);
+
+      if (!hasWarnedSlow && elapsed >= 5000) {
+        hasWarnedSlow = true;
+        pushDebugEvent("joinQueue:slow", {
+          elapsedMs: elapsed,
+          elapsedSec: Number((elapsed / 1000).toFixed(1)),
+          queueEntryId: queueEntryId ?? null,
+          isJoining,
+        });
+      }
+    }, 250);
+
+    return () => window.clearInterval(intervalId);
+  }, [isJoining, joinStartedAtMs, queueEntryId]);
 
   useEffect(() => {
     if (!queueEntryId) return;
@@ -610,6 +643,11 @@ function SoulGameRoute() {
                   App online (sidebar presence): {appOnlineCount}
                   {appOnlineUsersError ? " • sidebar presence unavailable" : ""}
                 </p>
+                {isJoining && joinElapsedMs >= 5000 ? (
+                  <p className="mt-1 text-xs text-[var(--color-rose)]">
+                    Debug: joinQueue is still waiting ({Math.ceil(joinElapsedMs / 1000)}s)
+                  </p>
+                ) : null}
                 {isQueueReady && availableOpponentCount === 0 ? (
                   <p className="mt-1 text-xs text-[var(--color-rose)]">
                     Queue sync looks delayed. Pull-to-refresh/reopen if this stays at 0.
