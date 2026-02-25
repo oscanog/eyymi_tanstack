@@ -9,6 +9,8 @@ import { PhoneNumberField } from "./PhoneNumberField";
 import { OtpKeypad } from "./OtpKeypad";
 import { SocialLoginButtons } from "./SocialLoginButtons";
 import { Button } from "@/components/ui/Button";
+import { StatusMessage } from "@/components/ui/StatusMessage";
+import { LoadingModal } from "@/components/ui/LoadingModal";
 
 type AuthMode = "signin" | "signup";
 
@@ -46,6 +48,65 @@ function formatCountdown(targetTs: number): string {
   return `${seconds}s`;
 }
 
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function toUserFriendlyAuthMessage(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return "Something went wrong. Please try again.";
+  }
+
+  const raw = error.message || "";
+
+  // Known backend/auth cases (strict signin/signup + OTP lifecycle)
+  if (raw.includes("No account found for this phone number")) {
+    return "No account found for this phone number. Please sign up first.";
+  }
+  if (raw.includes("already registered")) {
+    return "This phone number is already registered. Please sign in instead.";
+  }
+  if (raw.includes("Please wait before requesting another code")) {
+    return "Please wait a moment before requesting another code.";
+  }
+  if (raw.includes("OTP has expired")) {
+    return "Your code expired. Please request a new one.";
+  }
+  if (raw.includes("Invalid OTP code")) {
+    return "The code you entered is incorrect. Please try again.";
+  }
+  if (raw.includes("Too many OTP attempts")) {
+    return "Too many incorrect attempts. Please request a new code.";
+  }
+  if (raw.includes("OTP code must be 6 digits")) {
+    return "Enter the full 6-digit code.";
+  }
+  if (raw.includes("Phone number is required")) {
+    return "Please enter your phone number.";
+  }
+  if (raw.includes("Phone number format is invalid") || raw.includes("Only valid mobile phone numbers are supported")) {
+    return "Please enter a valid mobile phone number.";
+  }
+  if (raw.includes("OTP challenge is no longer valid")) {
+    return "This code is no longer valid. Please request a new one.";
+  }
+
+  // Strip noisy transport/debug details if present.
+  const stripped = raw
+    .replace(/\[Request ID:[^\]]+\]\s*/gi, "")
+    .replace(/Uncaught\s*ConvexError:\s*/gi, "")
+    .replace(/ConvexError:\s*/gi, "")
+    .replace(/\s+at handler[\s\S]*$/gi, "")
+    .trim();
+
+  if (!stripped) {
+    return "Something went wrong. Please try again.";
+  }
+
+  // Final fallback: keep it short and user-safe (no stack/request noise).
+  return stripped.length > 180 ? "Something went wrong. Please try again." : stripped;
+}
+
 export function AuthPhoneOtpFlow({ mode }: AuthPhoneOtpFlowProps) {
   const navigate = useNavigate();
   const [country, setCountry] = useState<SupportedCountry>("PH");
@@ -58,6 +119,7 @@ export function AuthPhoneOtpFlow({ mode }: AuthPhoneOtpFlowProps) {
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [normalizedPhone, setNormalizedPhone] = useState<string | null>(null);
   const [resendAvailableAt, setResendAvailableAt] = useState<number | null>(null);
+  const [isSignupTransitionLoading, setIsSignupTransitionLoading] = useState(false);
   const [, setTick] = useState(0);
 
   const title = mode === "signin" ? "Sign in" : "Sign up";
@@ -84,7 +146,7 @@ export function AuthPhoneOtpFlow({ mode }: AuthPhoneOtpFlowProps) {
           return;
         }
         if (storage.isAuthenticated()) {
-          navigate({ to: "/session" });
+          navigate({ to: "/welcome" });
         } else {
           navigate({ to: "/" });
         }
@@ -128,7 +190,7 @@ export function AuthPhoneOtpFlow({ mode }: AuthPhoneOtpFlowProps) {
       setOtpDigits(["", "", "", "", "", ""]);
       setStep("otp");
     } catch (err) {
-      setPhoneError(err instanceof Error ? err.message : "Failed to request OTP");
+      setPhoneError(toUserFriendlyAuthMessage(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -157,15 +219,20 @@ export function AuthPhoneOtpFlow({ mode }: AuthPhoneOtpFlowProps) {
         phoneE164: result.authUser.phoneE164,
         expiresAt: result.expiresAt,
       });
+      otpAuthStorage.setPostAuthRouteIntent(mode);
 
-      // Keep current username onboarding flow after OTP auth for now.
-      if (storage.isAuthenticated()) {
-        navigate({ to: "/session" });
-      } else {
+      // OTP auth is now the source of truth for the entry path.
+      // Do not rely on previous local username/device state here.
+      if (mode === "signup") {
+        setIsSignupTransitionLoading(true);
+        storage.clear();
+        await wait(1000);
         navigate({ to: "/" });
+      } else {
+        navigate({ to: "/welcome" });
       }
     } catch (err) {
-      setOtpError(err instanceof Error ? err.message : "Failed to verify OTP");
+      setOtpError(toUserFriendlyAuthMessage(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -278,7 +345,14 @@ export function AuthPhoneOtpFlow({ mode }: AuthPhoneOtpFlowProps) {
         ))}
       </div>
 
-      {otpError ? <p className="mb-3 text-sm text-center text-red-400">{otpError}</p> : null}
+      {otpError ? (
+        <StatusMessage
+          tone="error"
+          message={otpError}
+          compact
+          className="mb-3"
+        />
+      ) : null}
 
       <OtpKeypad onDigit={handleDigit} onBackspace={handleBackspace} disabled={isSubmitting} />
 
@@ -325,15 +399,23 @@ export function AuthPhoneOtpFlow({ mode }: AuthPhoneOtpFlowProps) {
   );
 
   return (
-    <div className="min-h-screen bg-[var(--color-navy-bg)] px-5 py-10">
-      <div className="mx-auto flex min-h-[calc(100vh-80px)] max-w-[430px] flex-col items-center justify-center">
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[var(--color-rose)] text-2xl font-bold text-white shadow-[0_12px_40px_rgba(20,184,166,0.25)]">
-          eyymi
+    <>
+      <LoadingModal
+        isOpen={isSignupTransitionLoading}
+        title="Account created"
+        subtitle="Finalizing your setup..."
+        logoSrc="/eyymi-handmark.svg"
+      />
+      <div className="min-h-screen bg-[var(--color-navy-bg)] px-5 py-10">
+        <div className="mx-auto flex min-h-[calc(100vh-80px)] max-w-[430px] flex-col items-center justify-center">
+          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[var(--color-rose)] text-2xl font-bold text-white shadow-[0_12px_40px_rgba(20,184,166,0.25)]">
+            eyymi
+          </div>
+          <AuthCard title={title} subtitle={subtitle}>
+            {step === "phone" ? renderPhoneStep() : renderOtpStep()}
+          </AuthCard>
         </div>
-        <AuthCard title={title} subtitle={subtitle}>
-          {step === "phone" ? renderPhoneStep() : renderOtpStep()}
-        </AuthCard>
       </div>
-    </div>
+    </>
   );
 }

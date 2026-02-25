@@ -1,0 +1,43 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="eyymiMint" x1="28" y1="24" x2="101" y2="104" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2DD4BF"/>
+      <stop offset="0.55" stop-color="#14B8A6"/>
+      <stop offset="1" stop-color="#0F766E"/>
+    </linearGradient>
+    <radialGradient id="eyymiGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(64 60) rotate(90) scale(46)">
+      <stop stop-color="#14B8A6" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#14B8A6" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softGlow" x="0" y="0" width="128" height="128" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+  </defs>
+
+  <circle cx="64" cy="64" r="56" fill="#0F1012"/>
+  <circle cx="64" cy="64" r="55.25" stroke="white" stroke-opacity="0.08" stroke-width="1.5"/>
+  <circle cx="64" cy="64" r="43" fill="url(#eyymiGlow)" filter="url(#softGlow)"/>
+
+  <g>
+    <rect x="24" y="65" width="18" height="34" rx="8" fill="#17181B" stroke="#14B8A6" stroke-opacity="0.35" stroke-width="1.5"/>
+    <path
+      d="M41 76C41 71.582 44.582 68 49 68H62V43.5C62 36.596 66.533 31.5 73 31.5C78.247 31.5 81.5 35.41 81.5 40.6V54.5H92.5C100.508 54.5 107 60.992 107 69C107 71.17 106.513 73.311 105.076 76.192L95.95 94.477C93.13 100.124 87.358 103.688 81.046 103.688H57C48.163 103.688 41 96.525 41 87.688V76Z"
+      fill="url(#eyymiMint)"
+    />
+    <path
+      d="M64.5 68.5V42.8C64.5 37.365 67.885 33.5 72.75 33.5C76.503 33.5 79.5 36.141 79.5 40.8V56.5H92.5C99.403 56.5 105 62.097 105 69C105 70.867 104.569 72.72 103.286 75.292L94.16 93.577C91.679 98.545 86.603 101.688 81.046 101.688H57C49.268 101.688 43 95.42 43 87.688V76C43 72.686 45.686 70 49 70H63.5C64.052 70 64.5 69.552 64.5 69V68.5Z"
+      stroke="#D9FFF8"
+      stroke-opacity="0.34"
+      stroke-width="1.5"
+    />
+    <path
+      d="M81.5 62.5H93.5M81.5 70.5H98M81.5 78.5H95.5"
+      stroke="#E9FFFB"
+      stroke-opacity="0.25"
+      stroke-width="2"
+      stroke-linecap="round"
+    />
+    <circle cx="35" cy="72" r="2.5" fill="#14B8A6"/>
+  </g>
+</svg>
+

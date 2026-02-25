@@ -4,6 +4,7 @@ import { AuthCard } from "@/components/auth/AuthCard";
 import { PhoneNumberField } from "@/components/auth/PhoneNumberField";
 import type { SupportedCountry } from "@/lib/phoneNumber";
 import { Button } from "@/components/ui/Button";
+import { StatusMessage } from "@/components/ui/StatusMessage";
 
 export const Route = createFileRoute("/forgot-password")({
   component: ForgotPasswordPage,
@@ -32,9 +33,11 @@ function ForgotPasswordPage() {
             error={null}
           />
 
-          <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3 text-sm text-[var(--color-text-secondary)]">
-            Placeholder only for now. Recovery flow will use phone OTP.
-          </div>
+          <StatusMessage
+            tone="info"
+            message="Placeholder only for now. Recovery flow will use phone OTP."
+            className="mt-4"
+          />
 
           <div className="mt-5 space-y-3">
             <Button type="button" className="w-full" disabled>

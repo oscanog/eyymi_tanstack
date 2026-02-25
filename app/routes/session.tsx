@@ -96,8 +96,16 @@ function SessionLayout() {
     let isCancelled = false
 
     const resolveAuthState = async () => {
+      const postAuthIntent = otpAuthStorage.consumePostAuthRouteIntent()
       const auth = storage.getAuth()
       if (!auth.deviceId || !auth.userId || !auth.username) {
+        if (postAuthIntent === 'signin' && otpAuthStorage.hasValidSession()) {
+          if (isCancelled) return
+          setIdentityRecovery(null)
+          setIdentityRecoveryError(null)
+          setAuthStatus('authenticated')
+          return
+        }
         if (isCancelled) return
         setIdentityRecovery(null)
         setAuthStatus('guest')
@@ -117,6 +125,14 @@ function SessionLayout() {
 
         if (existingUser) {
           storage.setAuthData(auth.deviceId, existingUser.username, existingUser._id)
+          setIdentityRecovery(null)
+          setIdentityRecoveryError(null)
+          setAuthStatus('authenticated')
+          return
+        }
+
+        if (postAuthIntent === 'signin' && otpAuthStorage.hasValidSession()) {
+          storage.clear()
           setIdentityRecovery(null)
           setIdentityRecoveryError(null)
           setAuthStatus('authenticated')

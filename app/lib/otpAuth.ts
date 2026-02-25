@@ -8,6 +8,7 @@ const OTP_AUTH_KEYS = {
   authUserId: "eyymi_auth_user_id",
   phoneE164: "eyymi_auth_phone_e164",
   expiresAt: "eyymi_auth_expires_at",
+  postAuthRouteIntent: "eyymi_auth_post_route_intent",
 } as const;
 
 const isBrowser = (): boolean => typeof window !== "undefined";
@@ -18,6 +19,8 @@ export interface OtpAuthSession {
   phoneE164: string;
   expiresAt: number;
 }
+
+export type PostAuthRouteIntent = "signin" | "signup";
 
 function read(key: string): string | null {
   if (!isBrowser()) return null;
@@ -72,11 +75,27 @@ export const otpAuthStorage = {
     remove(OTP_AUTH_KEYS.authUserId);
     remove(OTP_AUTH_KEYS.phoneE164);
     remove(OTP_AUTH_KEYS.expiresAt);
+    remove(OTP_AUTH_KEYS.postAuthRouteIntent);
   },
 
   hasValidSession(): boolean {
     const session = this.getSession();
     if (!session) return false;
     return session.expiresAt > Date.now();
+  },
+
+  setPostAuthRouteIntent(intent: PostAuthRouteIntent): void {
+    write(OTP_AUTH_KEYS.postAuthRouteIntent, intent);
+  },
+
+  getPostAuthRouteIntent(): PostAuthRouteIntent | null {
+    const raw = read(OTP_AUTH_KEYS.postAuthRouteIntent);
+    return raw === "signin" || raw === "signup" ? raw : null;
+  },
+
+  consumePostAuthRouteIntent(): PostAuthRouteIntent | null {
+    const intent = this.getPostAuthRouteIntent();
+    remove(OTP_AUTH_KEYS.postAuthRouteIntent);
+    return intent;
   },
 };

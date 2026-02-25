@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/Input";
+import { StatusMessage } from "@/components/ui/StatusMessage";
 import {
   SUPPORTED_COUNTRIES,
   type SupportedCountry,
@@ -26,7 +27,7 @@ export function PhoneNumberField({
       <label className="block text-sm font-medium text-[var(--color-text-primary)]">
         Phone number
       </label>
-      <div className="grid grid-cols-[120px_1fr] gap-2">
+      <div className="grid grid-cols-[120px_1fr] gap-1">
         <select
           value={country}
           onChange={(e) => onCountryChange(e.target.value as SupportedCountry)}
@@ -44,14 +45,18 @@ export function PhoneNumberField({
           type="tel"
           value={value}
           onChange={(e) => onValueChange(e.target.value)}
-          placeholder={country === "PH" ? "09948235631" : "Enter phone number"}
+          placeholder={
+            country === "PH"
+              ? "9XX XXX XXXX"
+              : "Enter phone number"
+          }
           disabled={disabled}
           error={Boolean(error)}
           autoComplete="tel"
           inputMode="tel"
         />
       </div>
-      {error ? <p className="text-sm text-red-400">{error}</p> : null}
+      {error ? <StatusMessage tone="error" message={error} compact /> : null}
     </div>
   );
 }

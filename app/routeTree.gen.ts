@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SigninRouteImport } from './routes/signin'
 import { Route as SessionRouteImport } from './routes/session'
@@ -20,6 +21,11 @@ import { Route as SessionJoinRouteImport } from './routes/session/join'
 import { Route as SessionCreateRouteImport } from './routes/session/create'
 import { Route as MapSessionIdRouteImport } from './routes/map.$sessionId'
 
+const WelcomeRoute = WelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/session': typeof SessionRouteWithChildren
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
+  '/welcome': typeof WelcomeRoute
   '/map/$sessionId': typeof MapSessionIdRoute
   '/session/create': typeof SessionCreateRoute
   '/session/join': typeof SessionJoinRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
+  '/welcome': typeof WelcomeRoute
   '/map/$sessionId': typeof MapSessionIdRoute
   '/session/create': typeof SessionCreateRoute
   '/session/join': typeof SessionJoinRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/session': typeof SessionRouteWithChildren
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
+  '/welcome': typeof WelcomeRoute
   '/map/$sessionId': typeof MapSessionIdRoute
   '/session/create': typeof SessionCreateRoute
   '/session/join': typeof SessionJoinRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/session'
     | '/signin'
     | '/signup'
+    | '/welcome'
     | '/map/$sessionId'
     | '/session/create'
     | '/session/join'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/signin'
     | '/signup'
+    | '/welcome'
     | '/map/$sessionId'
     | '/session/create'
     | '/session/join'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/session'
     | '/signin'
     | '/signup'
+    | '/welcome'
     | '/map/$sessionId'
     | '/session/create'
     | '/session/join'
@@ -151,11 +163,19 @@ export interface RootRouteChildren {
   SessionRoute: typeof SessionRouteWithChildren
   SigninRoute: typeof SigninRoute
   SignupRoute: typeof SignupRoute
+  WelcomeRoute: typeof WelcomeRoute
   MapSessionIdRoute: typeof MapSessionIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/welcome': {
+      id: '/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
@@ -252,6 +272,7 @@ const rootRouteChildren: RootRouteChildren = {
   SessionRoute: SessionRouteWithChildren,
   SigninRoute: SigninRoute,
   SignupRoute: SignupRoute,
+  WelcomeRoute: WelcomeRoute,
   MapSessionIdRoute: MapSessionIdRoute,
 }
 export const routeTree = rootRouteImport
