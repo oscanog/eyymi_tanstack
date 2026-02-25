@@ -45,6 +45,10 @@ export function AppBottomNav({ activeTab, chatBadgeCount = 4 }: AppBottomNavProp
     }
     if (key === "match") {
       void navigate({ to: "/soul_game" });
+      return;
+    }
+    if (key === "chat") {
+      void navigate({ to: "/chat" });
     }
   };
 
@@ -55,7 +59,11 @@ export function AppBottomNav({ activeTab, chatBadgeCount = 4 }: AppBottomNavProp
           {items.map((item) => {
             const Icon = item.icon;
             const isActive = item.key === activeTab;
-            const isNavigable = item.key === "home" || item.key === "voice" || item.key === "match";
+            const isNavigable =
+              item.key === "home" ||
+              item.key === "voice" ||
+              item.key === "match" ||
+              item.key === "chat";
 
             return (
               <button
