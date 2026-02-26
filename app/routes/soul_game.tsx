@@ -523,6 +523,50 @@ function SoulGameRoute() {
     strongestCandidateHold,
   ]);
 
+  const estimatedWaitMinutes = clientState?.queueSnapshot.estimatedWaitMs
+    ? Math.max(1, Math.ceil(clientState.queueSnapshot.estimatedWaitMs / 60000))
+    : 3;
+  const queueDisplayNumber = isQueueReady
+    ? String(Math.max(1, clientState?.queueSnapshot.queueCount ?? 1))
+    : isJoining
+      ? "..."
+      : "--";
+
+  const soulGamePrimaryActionLabel = !isQueueReady
+    ? isJoining
+      ? "Joining queue..."
+      : soulGameActionCopy.joinQueue
+    : isSubmittingPress
+      ? "Submitting..."
+      : isPressing
+        ? soulGameActionCopy.releaseToSubmit
+        : soulGameActionCopy.pressToMatch;
+
+  const statusChipColor =
+    statusTone === "success"
+      ? "rgba(34,197,94,0.16)"
+      : statusTone === "error"
+        ? "rgba(239,68,68,0.16)"
+        : "rgba(20,184,166,0.14)";
+
+  const statusChipBorderColor =
+    statusTone === "success"
+      ? "rgba(34,197,94,0.28)"
+      : statusTone === "error"
+        ? "rgba(239,68,68,0.28)"
+        : "rgba(20,184,166,0.22)";
+
+  const visualOtherCandidates = highlightedCandidate
+    ? candidates.filter((candidate) => candidate.queueEntryId !== highlightedCandidate.queueEntryId)
+    : candidates;
+  const visualCarouselCandidates = [
+    visualOtherCandidates[0] ?? null,
+    visualOtherCandidates[1] ?? null,
+    highlightedCandidate ?? null,
+    visualOtherCandidates[2] ?? null,
+    visualOtherCandidates[3] ?? null,
+  ];
+
   const handlePressStart = async (pointerId: number) => {
     if (!queueEntryId || isSubmittingPress || isMatchedOrSession) {
       pushDebugEvent("press:pointerDown:ignored", {
@@ -696,6 +740,311 @@ function SoulGameRoute() {
 
   return (
     <div className="min-h-screen bg-[var(--color-navy-bg)] text-[var(--color-text-primary)]">
+      <style>{`
+        @keyframes soul-copy-title-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.72; }
+        }
+        @keyframes soul-copy-center-pulse {
+          0%, 100% { transform: scale(1.5); }
+          50% { transform: scale(1.56); }
+        }
+        @keyframes soul-copy-center-glow {
+          0%, 100% { transform: scale(1.1); opacity: 0.28; }
+          50% { transform: scale(1.3); opacity: 0.48; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .soul-copy-title-anim,
+          .soul-copy-center-anim,
+          .soul-copy-center-glow {
+            animation: none !important;
+          }
+        }
+      `}</style>
+
+      <div
+        className="mx-auto flex min-h-screen w-full max-w-[430px] flex-col overflow-hidden px-5 pb-6 pt-4"
+        style={{
+          background:
+            "radial-gradient(circle at 50% 35%, rgba(20,184,166,0.14) 0%, rgba(20,184,166,0) 58%), linear-gradient(180deg, var(--color-navy-bg) 0%, var(--color-navy-surface) 100%)",
+        }}
+      >
+        <header className="safe-area-inset">
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => window.history.back()}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-drawer-item-bg)] px-4 text-sm font-medium"
+            >
+              Back
+            </button>
+            <div className="flex items-center gap-2">
+              <SoulGameIcon className="h-8 w-8" />
+              <h1 className="text-lg font-semibold tracking-tight">Soul game</h1>
+            </div>
+            <button
+              type="button"
+              onClick={handleLeaveQueue}
+              disabled={!queueEntryId}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-drawer-item-bg)] px-3 text-xs font-medium disabled:opacity-50"
+            >
+              {soulGameActionCopy.leaveQueue}
+            </button>
+          </div>
+        </header>
+
+        <main className="flex flex-1 flex-col">
+          <div className="mt-4">
+            <div
+              className="rounded-2xl border px-3 py-2"
+              style={{
+                backgroundColor: statusChipColor,
+                borderColor: statusChipBorderColor,
+              }}
+            >
+              <p className="text-sm font-semibold">{inlineMessage.title}</p>
+              <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
+                {inlineMessage.description}
+              </p>
+            </div>
+          </div>
+
+          {clientState?.session ? (
+            <div className="mt-3 rounded-2xl border border-[color:rgba(34,197,94,0.25)] bg-[color:rgba(34,197,94,0.08)] px-3 py-2">
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                @{clientState.session.matchedUser.username ?? "friend"} matched. Redirecting to chat...
+              </p>
+              <p className="mt-0.5 text-xs font-medium text-[var(--color-text-primary)]">
+                Time remaining: {formatCountdown(countdownMs)}
+              </p>
+            </div>
+          ) : null}
+
+          <div className="flex flex-1 flex-col items-center justify-center">
+            <h2
+              className="soul-copy-title-anim mb-3 text-5xl font-bold text-[var(--color-rose-light)]"
+              style={{ animation: "soul-copy-title-pulse 1.5s ease-in-out infinite" }}
+            >
+              Matching
+            </h2>
+
+            <p className="mb-3 text-center text-sm text-[var(--color-text-secondary)]">
+              Queuing number{" "}
+              <span className="font-semibold text-[var(--color-rose-light)]">{queueDisplayNumber}</span>, Wait
+              about <span className="font-semibold text-[var(--color-text-primary)]">{estimatedWaitMinutes}</span>{" "}
+              minute(s)
+            </p>
+
+            <p className="mb-8 text-center text-xs text-[var(--color-text-muted)]">
+              {availableOpponentCount} online candidate{availableOpponentCount === 1 ? "" : "s"} • @{username}
+              {isClientStateLoading && !clientState ? " • syncing..." : ""}
+              {appOnlineUsersError ? " • app presence limited" : ` • app online ${appOnlineCount}`}
+            </p>
+
+            <div className="relative mb-10 flex h-40 w-full max-w-sm items-center justify-center">
+              {([
+                { x: -180, scale: 0.8, opacity: 0.3, blur: 8, isCenter: false },
+                { x: -100, scale: 1, opacity: 0.6, blur: 2, isCenter: false },
+                { x: 0, scale: 1.5, opacity: 1, blur: 0, isCenter: true },
+                { x: 100, scale: 1, opacity: 0.6, blur: 2, isCenter: false },
+                { x: 180, scale: 0.8, opacity: 0.3, blur: 8, isCenter: false },
+              ] as const).map((slot, index) => {
+                const candidate = visualCarouselCandidates[index];
+                const avatarVariant = getBoundSoulAvatarVariant(
+                  candidate?.avatarId,
+                  candidate?.queueEntryId ?? candidate?.username,
+                  index,
+                );
+                const isCenter = slot.isCenter;
+                const isHolding =
+                  candidate && activeCandidateHolds.some((hold) => hold.queueEntryId === candidate.queueEntryId);
+
+                return (
+                  <div
+                    key={candidate?.queueEntryId ?? `copy-slot-${index}`}
+                    className="absolute"
+                    style={{
+                      transform: `translateX(${slot.x}px)`,
+                      opacity: slot.opacity,
+                      filter: `blur(${slot.blur}px) ${isCenter ? "saturate(1)" : "saturate(0.65)"}`,
+                    }}
+                  >
+                    <div
+                      className={isCenter ? "soul-copy-center-anim" : undefined}
+                      style={{
+                        transform: `scale(${slot.scale})`,
+                        animation: isCenter ? "soul-copy-center-pulse 2s ease-in-out infinite" : undefined,
+                      }}
+                    >
+                      <div className="relative">
+                        {isCenter ? (
+                          <div
+                            className="soul-copy-center-glow absolute inset-0 rounded-full bg-[var(--color-rose)]"
+                            style={{
+                              filter: "blur(20px)",
+                              animation: "soul-copy-center-glow 2s ease-in-out infinite",
+                            }}
+                            aria-hidden="true"
+                          />
+                        ) : null}
+
+                        <div
+                          className="relative flex h-24 w-24 items-center justify-center rounded-full border-2 border-white/15 shadow-xl"
+                          style={{
+                            background: candidate
+                              ? "linear-gradient(135deg, rgba(20,184,166,0.92) 0%, rgba(59,130,246,0.78) 100%)"
+                              : "linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
+                            boxShadow: isHolding
+                              ? "0 0 0 2px rgba(45,212,191,0.35), 0 12px 30px rgba(20,184,166,0.18)"
+                              : undefined,
+                          }}
+                        >
+                          {candidate ? (
+                            <SoulAvatarIcon variant={avatarVariant} className="h-14 w-14" />
+                          ) : (
+                            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-dashed border-white/20 text-lg text-[var(--color-text-muted)]">
+                              …
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="relative mb-4 h-28 w-28">
+              <span
+                className="absolute inset-0 rounded-full"
+                style={{
+                  background: `conic-gradient(rgba(20,184,166,0.9) ${Math.round(
+                    holdProgress * 360,
+                  )}deg, rgba(255,255,255,0.07) 0deg)`,
+                  opacity: isPressing || holdProgress > 0 ? 0.95 : 0.55,
+                }}
+                aria-hidden="true"
+              />
+              <span
+                className="absolute inset-[5px] rounded-full border border-[var(--color-border)] bg-[var(--color-navy-surface)]"
+                aria-hidden="true"
+              />
+              <button
+                type="button"
+                disabled={isSubmittingPress || isMatchedOrSession}
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  pushDebugEvent("button:onPointerDown", {
+                    pointerId: event.pointerId,
+                    isQueueReady,
+                    isJoining,
+                    isSubmittingPress,
+                  });
+                  if (!isQueueReady) {
+                    void handleJoinQueueManual();
+                    return;
+                  }
+                  void handlePressStart(event.pointerId);
+                }}
+                onPointerUp={(event) => {
+                  event.preventDefault();
+                  pushDebugEvent("button:onPointerUp", { pointerId: event.pointerId });
+                  void handlePressEnd(event.pointerId);
+                }}
+                onPointerCancel={(event) => {
+                  event.preventDefault();
+                  pushDebugEvent("button:onPointerCancel", { pointerId: event.pointerId });
+                  void handlePressEnd(event.pointerId);
+                }}
+                onPointerLeave={(event) => {
+                  if (!isPressing) return;
+                  pushDebugEvent("button:onPointerLeave", { pointerId: event.pointerId });
+                  void handlePressEnd(event.pointerId);
+                }}
+                className={`absolute inset-2 flex touch-none items-center justify-center rounded-full text-white shadow-2xl transition active:scale-95 disabled:opacity-70 ${
+                  isPressing ? "translate-y-0.5" : ""
+                }`}
+                style={{
+                  background: isPressing
+                    ? "linear-gradient(135deg, rgba(20,184,166,0.95) 0%, rgba(45,212,191,0.95) 100%)"
+                    : "linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-light) 100%)",
+                  boxShadow: "0 8px 32px rgba(20, 184, 166, 0.3)",
+                }}
+                aria-label={`${soulGameActionCopy.pressToMatch} to Soul Game match`}
+              >
+                <Fingerprint className="h-12 w-12" strokeWidth={1.5} />
+              </button>
+            </div>
+
+            <p className="text-center text-sm text-[rgba(45,212,191,0.7)]">
+              {isPressing
+                ? `Holding ${Math.round(holdProgress * 100)}% • keep holding`
+                : `Hold target ${Math.ceil(soulGameTimingConfig.minHoldMs / 1000)}s • ${soulGamePrimaryActionLabel}`}
+            </p>
+            <p className="mt-2 text-center text-xs text-[var(--color-text-muted)]">
+              Press and hold center button to match
+            </p>
+
+            <div className="mt-6 w-full max-w-sm space-y-2">
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-drawer-item-bg)] px-3 py-2 text-center text-xs text-[var(--color-text-secondary)]">
+                {partnerPressLabel}
+              </div>
+              <div className="flex items-center justify-between gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-drawer-item-bg)] px-3 py-2 text-[11px] text-[var(--color-text-secondary)]">
+                <span>Min overlap: {soulGameTimingConfig.minOverlapMs}ms</span>
+                <span>Session: {soulGameTimingConfig.sessionDurationMs / 60000} min</span>
+              </div>
+            </div>
+          </div>
+
+          {isDevDebug ? (
+            <details className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-drawer-item-bg)] p-3">
+              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
+                Debug (DEV)
+              </summary>
+              <div className="mt-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[11px] text-[var(--color-text-muted)]">
+                    Check browser console for `SoulGameDebug` logs.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setDebugEvents([])}
+                    className="rounded-lg border border-[var(--color-border)] px-2 py-1 text-[10px] text-[var(--color-text-secondary)]"
+                  >
+                    Clear
+                  </button>
+                </div>
+                <div className="mt-2 max-h-36 space-y-1 overflow-auto">
+                  {debugEvents.length === 0 ? (
+                    <p className="text-[11px] text-[var(--color-text-muted)]">No events yet.</p>
+                  ) : (
+                    debugEvents.map((row) => (
+                      <div
+                        key={row.id}
+                        className="rounded-lg border border-white/5 bg-[var(--color-navy-surface)] px-2 py-1.5 text-[11px]"
+                      >
+                        <p className="font-medium text-[var(--color-text-primary)]">
+                          {row.at} • {row.event}
+                        </p>
+                        {row.detail ? (
+                          <pre className="mt-1 overflow-x-auto text-[10px] leading-4 text-[var(--color-text-secondary)]">
+{JSON.stringify(row.detail, null, 2)}
+                          </pre>
+                        ) : null}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </details>
+          ) : null}
+        </main>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-[var(--color-navy-bg)] text-[var(--color-text-primary)]">
       <div className="mx-auto flex min-h-screen w-full max-w-[430px] flex-col bg-[var(--color-navy-bg)] px-4 pt-4 pb-6">
         <header className="safe-area-inset">
           <div className="flex items-center justify-between gap-3">
@@ -746,7 +1095,7 @@ function SoulGameRoute() {
                   {isClientStateLoading && !clientState
                     ? "Syncing queue..."
                     : availableOpponentCount > 0 && clientState?.queueSnapshot.estimatedWaitMs
-                      ? `Estimated wait ~${Math.ceil(clientState.queueSnapshot.estimatedWaitMs / 1000)}s`
+                      ? `Estimated wait ~${Math.ceil((clientState?.queueSnapshot.estimatedWaitMs ?? 0) / 1000)}s`
                       : "Waiting for another player to hold (excludes you)"}
                 </p>
                 <p className="mt-1 text-xs text-[var(--color-text-muted)]">
@@ -776,7 +1125,7 @@ function SoulGameRoute() {
                     Rotating focus
                   </p>
                   <p className="mt-1 text-sm font-medium">
-                    {highlightedCandidate?.username ? `@${highlightedCandidate.username}` : "Waiting for players"}
+                    {highlightedCandidate?.username ? `@${highlightedCandidate?.username}` : "Waiting for players"}
                   </p>
                 </div>
                 <div className="relative">
@@ -825,7 +1174,7 @@ function SoulGameRoute() {
                 2-minute conversation
               </p>
               <p className="mt-1 text-base font-semibold">
-                @{clientState.session.matchedUser.username ?? "friend"} eyy to you, beginning your 2-minute conversation session
+                @{clientState?.session?.matchedUser.username ?? "friend"} eyy to you, beginning your 2-minute conversation session
               </p>
               <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
                 Time remaining: {formatCountdown(countdownMs)}
