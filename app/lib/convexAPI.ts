@@ -39,9 +39,11 @@ export const api = {
   users: {
     upsert: "users/upsert" as const,
     getByDevice: "users/getByDevice" as const,
+    get: "users/get" as const,
     heartbeat: "users/heartbeat" as const,
     setOffline: "users/setOffline" as const,
     getOnlineUsers: "users/getOnlineUsers" as const,
+    updateMatchPreference: "users/updateMatchPreference" as const,
   },
   locationSessions: locationSessionEndpoints,
   sessions: locationSessionEndpoints,
@@ -55,6 +57,15 @@ export const api = {
   admin: {
     deployDummyUsers: "admin/deployDummyUsers" as const,
     getDummyUsersStatus: "admin/getDummyUsersStatus" as const,
+  },
+  copyMatch: {
+    joinQueue: "copyMatch/joinQueue" as const,
+    heartbeat: "copyMatch/heartbeat" as const,
+    leaveQueue: "copyMatch/leaveQueue" as const,
+    updateTarget: "copyMatch/updateTarget" as const,
+    pressStart: "copyMatch/pressStart" as const,
+    pressEnd: "copyMatch/pressEnd" as const,
+    getClientState: "copyMatch/getClientState" as const,
   },
 };
 

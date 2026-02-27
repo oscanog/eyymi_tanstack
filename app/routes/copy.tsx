@@ -1,434 +1,503 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
-import {
-  Compass,
-  Fingerprint,
-  Heart,
-  MessageCircle,
-  Mic,
-  X,
-} from "lucide-react";
-import { useOnlineUsers } from "@/hooks/useOnlineUsers";
-import {
-  COPY_CAROUSEL_ROTATE_MS,
-  COPY_CAROUSEL_TRANSITION_MS,
-  COPY_MATCH_HOLD_MS,
-  getCopyCarouselVisualState,
-  getHoldProgress,
-  getWrappedIndex,
-} from "../lib/copy-carousel";
-import { buildCopyCarouselUsers } from "../lib/copy-online-users";
+import { useEffect, useMemo, useState, type ComponentType } from "react";
+import { Fingerprint, Heart, SlidersHorizontal, X } from "lucide-react";
+import { convexMutation } from "@/lib/convex";
+import { useConvexQuery, useConvexSubscription } from "@/hooks/useConvexQuery";
+import { getCopyCarouselVisualState, getWrappedIndex } from "@/lib/copy-carousel";
+import { getProgressRatio, shouldShowNoCandidatesDecision } from "@/lib/copy-match.helpers";
+import { resolveCopyCarouselAvatar } from "@/lib/copy-online-users";
 import { storage } from "@/lib/storage";
+import {
+  GenderFemaleIcon,
+  GenderGayIcon,
+  GenderLesbianIcon,
+  GenderMaleIcon,
+} from "@/components/icons";
+import { onboardingGenderOptions, type GenderOption } from "../../data";
 
 export const Route = createFileRoute("/copy")({
   component: CopyMatchPage,
 });
 
-type CopyNavItem = {
-  key: string;
-  label: string;
-  icon: typeof MessageCircle;
-  active?: boolean;
+type UserProfile = {
+  _id: string;
+  username: string;
+  avatarId?: string;
+  gender?: GenderOption;
+  preferredMatchGender?: GenderOption;
 };
 
-const navItems: CopyNavItem[] = [
-  { key: "chat", label: "Chat", icon: MessageCircle },
-  { key: "voice", label: "Voice", icon: Mic },
-  { key: "discover", label: "Discover", icon: Compass },
-  { key: "match", label: "Match", icon: Heart, active: true },
-];
+type JoinQueueResult = {
+  queueEntryId: string;
+  status: "queued" | "matched";
+  serverNow: number;
+};
+
+type CopyClientState = {
+  serverNow: number;
+  config: {
+    RING_PROGRESS_MS: number;
+  };
+  filterMode: "preferred_only" | "all_genders";
+  self: {
+    queueEntryId: string;
+    username: string | null;
+    avatarId: string | null;
+    gender: GenderOption | null;
+    preferredMatchGender: GenderOption | null;
+    queueStatus: "queued" | "matching" | "matched";
+    targetQueueEntryId: string | null;
+  } | null;
+  candidates: Array<{
+    queueEntryId: string;
+    username: string | null;
+    avatarId: string | null;
+    gender: GenderOption | null;
+    joinedAt: number;
+    lastHeartbeatAt: number;
+  }>;
+  hasCandidatesForPreferred: boolean;
+  activePress: {
+    pressEventId: string;
+    targetQueueEntryId: string;
+    pressStartedAt: number;
+    pressEndedAt: number | null;
+    durationMs: number | null;
+    status: "pending" | "matched" | "expired" | "cancelled";
+  } | null;
+  match: {
+    matchId: string;
+    status: "pending_progress" | "ready" | "ended" | "cancelled";
+    userAProgressStartAt: number;
+    userBProgressStartAt: number;
+    progressDurationMs: number;
+    readyAt: number | null;
+    selfDirection: "clockwise" | "counter_clockwise" | null;
+    partner: {
+      queueEntryId: string;
+      username: string | null;
+      avatarId: string | null;
+    } | null;
+  } | null;
+};
+
+const genderOptionIcons: Record<GenderOption, ComponentType<{ className?: string }>> = {
+  male: GenderMaleIcon,
+  female: GenderFemaleIcon,
+  gay: GenderGayIcon,
+  lesbian: GenderLesbianIcon,
+};
 
 function CopyMatchPage() {
-  const { users: onlineUsers, isLoading: isOnlineUsersLoading, error: onlineUsersError } = useOnlineUsers(true);
-  const currentUserId = storage.getUserId();
-  const currentUsername = storage.getUsername();
-  const carouselUsers = buildCopyCarouselUsers(onlineUsers, currentUserId, currentUsername);
+  const userId = storage.getUserId();
+  const [queueEntryId, setQueueEntryId] = useState<string | null>(null);
+  const [filterMode, setFilterMode] = useState<"preferred_only" | "all_genders">("preferred_only");
   const [centerIndex, setCenterIndex] = useState(0);
+  const [activePressEventId, setActivePressEventId] = useState<string | null>(null);
   const [isPressing, setIsPressing] = useState(false);
   const [isMatchedModalOpen, setIsMatchedModalOpen] = useState(false);
-  const [holdProgress, setHoldProgress] = useState(0);
-  const avatarCount = carouselUsers.length;
-  const holdStartAtRef = useRef<number | null>(null);
-  const holdRafIdRef = useRef<number | null>(null);
-  const holdCompletedRef = useRef(false);
-  const isCarouselPaused = isPressing || isMatchedModalOpen;
+  const [showPreferenceModal, setShowPreferenceModal] = useState(false);
+  const [showNoCandidatesModal, setShowNoCandidatesModal] = useState(false);
+  const [selectedPreferredGender, setSelectedPreferredGender] = useState<GenderOption | null>(null);
+  const [nowMs, setNowMs] = useState(Date.now());
+  const [isSavingPreference, setIsSavingPreference] = useState(false);
+
+  const { data: profile } = useConvexQuery<UserProfile>(
+    "users:get",
+    userId ? { userId } : {},
+    Boolean(userId)
+  );
+
+  const { data: state } = useConvexSubscription<CopyClientState>(
+    "copyMatch:getClientState",
+    queueEntryId ? { queueEntryId, filterMode } : { filterMode },
+    1000,
+    true
+  );
+
+  const candidates = state?.candidates ?? [];
+  const avatarCount = candidates.length;
+  const centerCandidate = avatarCount > 0 ? candidates[centerIndex % avatarCount] : null;
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNowMs(Date.now()), 120);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!profile) return;
+    setSelectedPreferredGender(profile.preferredMatchGender ?? null);
+    setShowPreferenceModal(!profile.preferredMatchGender);
+  }, [profile]);
+
+  useEffect(() => {
+    if (!profile || !profile.preferredMatchGender || queueEntryId) return;
+    let cancelled = false;
+    void convexMutation<JoinQueueResult>("copyMatch:joinQueue", {
+      profileUserId: profile._id,
+      username: profile.username,
+      avatarId: profile.avatarId,
+      gender: profile.gender,
+      preferredMatchGender: profile.preferredMatchGender,
+    }).then((result) => {
+      if (!cancelled) setQueueEntryId(result.queueEntryId);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [profile, queueEntryId]);
+
+  useEffect(() => {
+    if (!queueEntryId) return;
+    const interval = window.setInterval(() => {
+      void convexMutation("copyMatch:heartbeat", { queueEntryId });
+    }, 15000);
+    return () => window.clearInterval(interval);
+  }, [queueEntryId]);
+
+  useEffect(() => {
+    if (!queueEntryId || !centerCandidate || isPressing) return;
+    void convexMutation("copyMatch:updateTarget", {
+      queueEntryId,
+      targetQueueEntryId: centerCandidate.queueEntryId,
+    });
+  }, [queueEntryId, centerCandidate, isPressing]);
+
+  useEffect(() => {
+    if (avatarCount <= 1 || isPressing || isMatchedModalOpen || showPreferenceModal) return;
+    const interval = window.setInterval(() => {
+      setCenterIndex((prev) => getWrappedIndex(prev, 1, avatarCount));
+    }, 2200);
+    return () => window.clearInterval(interval);
+  }, [avatarCount, isPressing, isMatchedModalOpen, showPreferenceModal]);
+
+  useEffect(() => {
+    if (!state?.match || state.match.status !== "ready") return;
+    setIsMatchedModalOpen(true);
+    setIsPressing(false);
+    setActivePressEventId(null);
+  }, [state?.match]);
+
+  useEffect(() => {
+    if (!state?.self) return;
+    const shouldShow = shouldShowNoCandidatesDecision({
+      hasPreferredGender: Boolean(state.self.preferredMatchGender),
+      hasCandidatesForPreferred: state.hasCandidatesForPreferred,
+      filterMode,
+    });
+    setShowNoCandidatesModal(shouldShow && !showPreferenceModal);
+  }, [state?.self, state?.hasCandidatesForPreferred, filterMode, showPreferenceModal]);
+
+  useEffect(() => {
+    return () => {
+      if (!queueEntryId) return;
+      void convexMutation("copyMatch:leaveQueue", { queueEntryId });
+    };
+  }, [queueEntryId]);
+
+  const handleSavePreference = async () => {
+    if (!selectedPreferredGender || !userId) return;
+    setIsSavingPreference(true);
+    try {
+      await convexMutation("users:updateMatchPreference", {
+        userId,
+        preferredMatchGender: selectedPreferredGender,
+      });
+      if (queueEntryId) {
+        await convexMutation("copyMatch:joinQueue", {
+          profileUserId: userId,
+          username: profile?.username,
+          avatarId: profile?.avatarId,
+          gender: profile?.gender,
+          preferredMatchGender: selectedPreferredGender,
+        });
+      }
+      setShowPreferenceModal(false);
+      setFilterMode("preferred_only");
+    } finally {
+      setIsSavingPreference(false);
+    }
+  };
+
+  const handlePressStart = async () => {
+    if (!queueEntryId || !centerCandidate || isPressing || isMatchedModalOpen) return;
+    const result = await convexMutation<{
+      ok: boolean;
+      pressEventId?: string;
+    }>("copyMatch:pressStart", {
+      queueEntryId,
+      targetQueueEntryId: centerCandidate.queueEntryId,
+    });
+    if (!result.ok || !result.pressEventId) return;
+    setActivePressEventId(result.pressEventId);
+    setIsPressing(true);
+  };
+
+  const handlePressEnd = async () => {
+    if (!queueEntryId || !activePressEventId) {
+      setIsPressing(false);
+      return;
+    }
+    await convexMutation("copyMatch:pressEnd", {
+      queueEntryId,
+      pressEventId: activePressEventId,
+    });
+    setIsPressing(false);
+    setActivePressEventId(null);
+  };
+
+  const ringProgress = useMemo(() => {
+    if (!state?.match) {
+      return { self: 0, partner: 0 };
+    }
+    const selfIsClockwise = state.match.selfDirection === "clockwise";
+    const selfStart = selfIsClockwise ? state.match.userAProgressStartAt : state.match.userBProgressStartAt;
+    const partnerStart = selfIsClockwise ? state.match.userBProgressStartAt : state.match.userAProgressStartAt;
+    return {
+      self: getProgressRatio(nowMs, selfStart, state.match.progressDurationMs),
+      partner: getProgressRatio(nowMs, partnerStart, state.match.progressDurationMs),
+    };
+  }, [state?.match, nowMs]);
+
   const ringRadius = 54;
   const ringCircumference = 2 * Math.PI * ringRadius;
 
-  const stopHoldAnimation = useCallback(() => {
-    if (holdRafIdRef.current !== null) {
-      window.cancelAnimationFrame(holdRafIdRef.current);
-      holdRafIdRef.current = null;
-    }
-  }, []);
-
-  const handleHoldComplete = useCallback(() => {
-    if (holdCompletedRef.current) return;
-    holdCompletedRef.current = true;
-    holdStartAtRef.current = null;
-    stopHoldAnimation();
-    setHoldProgress(1);
-    setIsPressing(false);
-    setIsMatchedModalOpen(true);
-  }, [stopHoldAnimation]);
-
-  const handlePressStart = useCallback(
-    (event: PointerEvent<HTMLButtonElement>) => {
-      event.preventDefault();
-      if (isPressing || isMatchedModalOpen || avatarCount <= 0) return;
-
-      stopHoldAnimation();
-      holdCompletedRef.current = false;
-      holdStartAtRef.current = performance.now();
-      setHoldProgress(0);
-      setIsPressing(true);
-
-      const tick = (nowMs: number) => {
-        const holdStart = holdStartAtRef.current;
-        if (holdStart === null) return;
-
-        const nextProgress = getHoldProgress(nowMs, holdStart, COPY_MATCH_HOLD_MS);
-        setHoldProgress(nextProgress);
-
-        if (nextProgress >= 1) {
-          handleHoldComplete();
-          return;
-        }
-
-        holdRafIdRef.current = window.requestAnimationFrame(tick);
-      };
-
-      holdRafIdRef.current = window.requestAnimationFrame(tick);
-    },
-    [avatarCount, handleHoldComplete, isMatchedModalOpen, isPressing, stopHoldAnimation],
-  );
-
-  const handlePressEnd = useCallback(
-    (event: PointerEvent<HTMLButtonElement>) => {
-      event.preventDefault();
-      if (holdCompletedRef.current) return;
-
-      holdStartAtRef.current = null;
-      stopHoldAnimation();
-      setIsPressing(false);
-      setHoldProgress(0);
-    },
-    [stopHoldAnimation],
-  );
-
-  const handleCloseMatchedModal = useCallback(() => {
-    holdStartAtRef.current = null;
-    holdCompletedRef.current = false;
-    stopHoldAnimation();
-    setHoldProgress(0);
-    setIsPressing(false);
-    setIsMatchedModalOpen(false);
-  }, [stopHoldAnimation]);
-
-  useEffect(() => {
-    setCenterIndex((prev) => (avatarCount <= 0 ? 0 : prev % avatarCount));
-  }, [avatarCount]);
-
-  useEffect(() => {
-    if (avatarCount > 0) return;
-
-    holdStartAtRef.current = null;
-    holdCompletedRef.current = false;
-    stopHoldAnimation();
-    setHoldProgress(0);
-    setIsPressing(false);
-    setIsMatchedModalOpen(false);
-  }, [avatarCount, stopHoldAnimation]);
-
-  useEffect(() => {
-    if (avatarCount <= 1 || isCarouselPaused) return;
-
-    const intervalId = window.setInterval(() => {
-      setCenterIndex((prev) => getWrappedIndex(prev, 1, avatarCount));
-    }, COPY_CAROUSEL_ROTATE_MS);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [avatarCount, isCarouselPaused]);
-
-  useEffect(() => {
-    return () => {
-      stopHoldAnimation();
-    };
-  }, [stopHoldAnimation]);
-
   return (
-    <>
-      <style>{`
-        @keyframes copy-match-title-pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.72; }
-        }
-        @keyframes copy-match-center-avatar-pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.04); }
-        }
-        @keyframes copy-match-center-glow {
-          0%, 100% { transform: scale(1.08); opacity: 0.26; }
-          50% { transform: scale(1.2); opacity: 0.44; }
-        }
-        .copy-match-carousel-item {
-          transition:
-            transform ${COPY_CAROUSEL_TRANSITION_MS}ms cubic-bezier(0.22, 1, 0.36, 1),
-            opacity ${COPY_CAROUSEL_TRANSITION_MS}ms cubic-bezier(0.22, 1, 0.36, 1),
-            filter ${COPY_CAROUSEL_TRANSITION_MS}ms cubic-bezier(0.22, 1, 0.36, 1);
-          will-change: transform, opacity, filter;
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .copy-match-anim-title,
-          .copy-match-anim-center-shell,
-          .copy-match-anim-glow {
-            animation: none !important;
-          }
-          .copy-match-carousel-item {
-            transition: none !important;
-          }
-        }
-      `}</style>
-
-      <div
-        className="relative flex h-screen flex-col text-[var(--color-text-primary)]"
-        style={{ backgroundColor: "var(--color-navy-bg)" }}
-      >
-        <div className="flex-1 overflow-y-auto pb-20">
-          <div
-            className="flex h-full min-h-screen flex-col overflow-hidden px-6 pb-8 pt-6"
-            style={{
-              background:
-                "radial-gradient(circle at 50% 36%, rgba(20,184,166,0.14) 0%, rgba(20,184,166,0) 56%), linear-gradient(180deg, var(--color-navy-bg) 0%, var(--color-navy-surface) 100%)",
-            }}
-          >
-            <div className="mb-12 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Heart className="h-6 w-6 fill-[var(--color-rose)] text-[var(--color-rose)]" />
-                <h1 className="text-lg font-medium text-[var(--color-text-primary)]">Soul game</h1>
-              </div>
-              <button
-                type="button"
-                aria-label="Close"
-                className="flex h-8 w-8 items-center justify-center text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-primary)]"
-              >
-                <X className="h-6 w-6" />
-              </button>
+    <div className="relative flex h-screen flex-col bg-[var(--color-navy-bg)] text-[var(--color-text-primary)]">
+      <div className="flex-1 overflow-y-auto pb-20">
+        <div className="mx-auto flex h-full min-h-screen w-full max-w-[430px] flex-col overflow-hidden px-6 pb-8 pt-6">
+          <div className="mb-12 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Heart className="h-6 w-6 fill-[var(--color-rose)] text-[var(--color-rose)]" />
+              <h1 className="text-lg font-medium">Soul game</h1>
             </div>
+            <button
+              type="button"
+              onClick={() => setShowPreferenceModal(true)}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-drawer-item-bg)]"
+              aria-label="Change preferred match gender"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+            </button>
+          </div>
 
-            <div className="flex flex-1 flex-col items-center justify-center">
-              <h2
-                className="copy-match-anim-title mb-3 text-5xl font-bold text-[var(--color-rose-light)]"
-                style={{
-                  animation: "copy-match-title-pulse 1.5s ease-in-out infinite",
-                }}
-              >
-                Matching
-              </h2>
+          <div className="flex flex-1 flex-col items-center justify-center">
+            <h2 className="mb-3 text-5xl font-bold text-[var(--color-rose-light)]">Matching</h2>
+            <p className="mb-12 text-center text-sm text-[var(--color-text-secondary)]">
+              {avatarCount > 0
+                ? `Online now ${avatarCount}. Hold to start a quick match`
+                : "No other online users available right now."}
+            </p>
 
-              <p className="mb-12 text-center text-sm text-[var(--color-text-secondary)]">
-                {avatarCount > 0 ? (
-                  <>
-                    Online now{" "}
-                    <span className="font-semibold text-[var(--color-rose-light)]">{avatarCount}</span>, Hold to start a
-                    quick match
-                  </>
-                ) : isOnlineUsersLoading ? (
-                  "Loading online users..."
-                ) : (
-                  "No other online users available right now."
-                )}
-              </p>
-
-              <div className="relative mb-12 flex h-40 w-full max-w-sm items-center justify-center">
-                {carouselUsers.map((user, index) => {
-                  const visual = getCopyCarouselVisualState(index, centerIndex, avatarCount);
-
-                  return (
-                    <div
-                      key={user._id}
-                      className="copy-match-carousel-item absolute"
-                      aria-hidden={!visual.isVisible}
-                      style={{
-                        transform: `translateX(${visual.x}px) scale(${visual.scale})`,
-                        opacity: visual.opacity,
-                        filter: `blur(${visual.blur}px) saturate(${visual.saturation})`,
-                        zIndex: visual.zIndex,
-                        pointerEvents: visual.isVisible ? "auto" : "none",
-                      }}
-                    >
-                      <div className="relative">
-                        {visual.isCenter && isPressing && !isMatchedModalOpen ? (
-                          <div className="pointer-events-none absolute -inset-3 z-20">
-                            <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
-                              <circle
-                                cx="60"
-                                cy="60"
-                                r={ringRadius}
-                                fill="none"
-                                stroke="var(--color-border)"
-                                strokeWidth="4"
-                                opacity="0.5"
-                              />
-                              <circle
-                                cx="60"
-                                cy="60"
-                                r={ringRadius}
-                                fill="none"
-                                stroke="var(--color-rose-light)"
-                                strokeWidth="5"
-                                strokeLinecap="round"
-                                strokeDasharray={ringCircumference}
-                                strokeDashoffset={ringCircumference * (1 - holdProgress)}
-                              />
-                            </svg>
-                          </div>
-                        ) : null}
-
-                        {visual.isCenter ? (
-                          <div
-                            className="copy-match-anim-glow absolute inset-0 rounded-full bg-[var(--color-rose)]"
-                            style={{
-                              filter: "blur(20px)",
-                              animation: "copy-match-center-glow 2s ease-in-out infinite",
-                            }}
-                            aria-hidden="true"
-                          />
-                        ) : null}
-
-                        <div
-                          className={`relative flex h-24 w-24 items-center justify-center rounded-full border-2 border-white/20 shadow-xl ${
-                            visual.isCenter ? "copy-match-anim-center-shell" : ""
-                          }`}
-                          style={{
-                            background: user.avatar.gradient,
-                            animation: visual.isCenter
-                              ? "copy-match-center-avatar-pulse 2s ease-in-out infinite"
-                              : undefined,
-                          }}
-                        >
-                          <span className="text-5xl" style={{ filter: "none" }}>
-                            {user.avatar.emoji}
-                          </span>
+            <div className="relative mb-12 flex h-40 w-full max-w-sm items-center justify-center">
+              {candidates.map((candidate, index) => {
+                const visual = getCopyCarouselVisualState(index, centerIndex, avatarCount);
+                const avatar = resolveCopyCarouselAvatar(
+                  candidate.avatarId ?? undefined,
+                  `${candidate.queueEntryId}:${candidate.username ?? ""}`
+                );
+                return (
+                  <div
+                    key={candidate.queueEntryId}
+                    className="absolute"
+                    aria-hidden={!visual.isVisible}
+                    style={{
+                      transform: `translateX(${visual.x}px) scale(${visual.scale})`,
+                      opacity: visual.opacity,
+                      filter: `blur(${visual.blur}px) saturate(${visual.saturation})`,
+                      zIndex: visual.zIndex,
+                    }}
+                  >
+                    <div className="relative">
+                      {visual.isCenter && state?.match ? (
+                        <div className="pointer-events-none absolute -inset-3 z-20">
+                          <svg viewBox="0 0 120 120" className="h-full w-full">
+                            <circle cx="60" cy="60" r={ringRadius} fill="none" stroke="var(--color-border)" strokeWidth="4" />
+                            <circle
+                              cx="60"
+                              cy="60"
+                              r={ringRadius}
+                              fill="none"
+                              stroke="var(--color-rose-light)"
+                              strokeWidth="5"
+                              strokeLinecap="round"
+                              strokeDasharray={ringCircumference}
+                              strokeDashoffset={ringCircumference * (1 - ringProgress.self)}
+                              transform="rotate(-90 60 60)"
+                            />
+                            <circle
+                              cx="60"
+                              cy="60"
+                              r={ringRadius - 6}
+                              fill="none"
+                              stroke="rgba(142,163,255,0.95)"
+                              strokeWidth="4"
+                              strokeLinecap="round"
+                              strokeDasharray={2 * Math.PI * (ringRadius - 6)}
+                              strokeDashoffset={2 * Math.PI * (ringRadius - 6) * (1 - ringProgress.partner)}
+                              transform="rotate(90 60 60)"
+                            />
+                          </svg>
                         </div>
+                      ) : null}
+
+                      <div
+                        className="relative flex h-24 w-24 items-center justify-center rounded-full border-2 border-white/20 shadow-xl"
+                        style={{ background: avatar.gradient }}
+                      >
+                        <span className="text-5xl">{avatar.emoji}</span>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
+            </div>
 
+            <button
+              type="button"
+              aria-label="Press and hold to match"
+              aria-pressed={isPressing}
+              disabled={isMatchedModalOpen || avatarCount === 0 || showPreferenceModal}
+              onPointerDown={(event) => {
+                event.preventDefault();
+                void handlePressStart();
+              }}
+              onPointerUp={(event) => {
+                event.preventDefault();
+                void handlePressEnd();
+              }}
+              onPointerCancel={() => {
+                void handlePressEnd();
+              }}
+              onPointerLeave={() => {
+                if (isPressing) void handlePressEnd();
+              }}
+              className="flex h-24 w-24 items-center justify-center rounded-full text-white shadow-2xl active:scale-95 disabled:opacity-70"
+              style={{
+                background: "linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-light) 100%)",
+                boxShadow: "0 8px 32px rgba(20, 184, 166, 0.3)",
+              }}
+            >
+              <Fingerprint className="h-12 w-12" strokeWidth={1.5} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {isMatchedModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-6" role="presentation">
+          <div className="absolute inset-0 bg-[var(--color-drawer-backdrop)] backdrop-blur-[3px]" />
+          <div className="relative w-full max-w-sm rounded-3xl border border-[var(--color-border)] bg-[var(--color-drawer-surface)] p-6 text-center">
+            <h3 className="text-2xl font-semibold text-[var(--color-rose-light)]">Matched!</h3>
+            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+              Realtime ring connection is complete.
+            </p>
+            <button
+              type="button"
+              onClick={() => setIsMatchedModalOpen(false)}
+              className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-full px-6 text-sm font-semibold"
+              style={{ background: "linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-light) 100%)" }}
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showNoCandidatesModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center px-6">
+          <div className="absolute inset-0 bg-[var(--color-drawer-backdrop)]" />
+          <div className="relative w-full max-w-sm rounded-2xl border border-[var(--color-border)] bg-[var(--color-modal-surface)] p-4">
+            <h3 className="text-base font-semibold">No online candidates</h3>
+            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+              No online candidates for your selected preference right now.
+            </p>
+            <div className="mt-4 grid grid-cols-1 gap-2">
               <button
                 type="button"
-                aria-label="Press and hold to match"
-                aria-pressed={isPressing}
-                disabled={isMatchedModalOpen || avatarCount === 0}
-                onPointerDown={handlePressStart}
-                onPointerUp={handlePressEnd}
-                onPointerCancel={handlePressEnd}
-                onPointerLeave={handlePressEnd}
-                className="flex h-24 w-24 items-center justify-center rounded-full text-white shadow-2xl active:scale-95 disabled:opacity-70"
-                style={{
-                  background:
-                    "linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-light) 100%)",
-                  boxShadow: "0 8px 32px rgba(20, 184, 166, 0.3)",
+                onClick={() => {
+                  setFilterMode("all_genders");
+                  setShowNoCandidatesModal(false);
                 }}
+                className="min-h-[44px] rounded-xl bg-[var(--color-rose)] px-4 text-sm font-semibold text-white"
               >
-                <Fingerprint className="h-12 w-12" strokeWidth={1.5} />
+                Continue with all genders
               </button>
-
-              <p className="mt-6 text-sm text-[rgba(45,212,191,0.6)]">
-                {onlineUsersError ? (
-                  <span className="text-[var(--color-error)]">Online users unavailable. Please retry shortly.</span>
-                ) : (
-                  <>
-                    Today you left <span className="font-semibold text-[var(--color-rose-light)]">10</span> match times
-                  </>
-                )}
-              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowNoCandidatesModal(false);
+                  setShowPreferenceModal(true);
+                }}
+                className="min-h-[44px] rounded-xl border border-[var(--color-border)] bg-[var(--color-drawer-item-bg)] px-4 text-sm font-semibold"
+              >
+                Change preference
+              </button>
             </div>
           </div>
         </div>
+      )}
 
-        <nav
-          className="fixed bottom-0 left-0 right-0 mx-auto max-w-[430px] backdrop-blur-xl"
-          style={{
-            borderTop: "1px solid var(--color-border)",
-            backgroundColor: "rgba(23, 24, 27, 0.82)",
-          }}
-        >
-          <div className="grid h-16 grid-cols-4">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = Boolean(item.active);
-              return (
+      {showPreferenceModal && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center px-6">
+          <div className="absolute inset-0 bg-[var(--color-drawer-backdrop)]" />
+          <div className="relative w-full max-w-sm rounded-2xl border border-[var(--color-border)] bg-[var(--color-modal-surface)] p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Who do you want to match with?</h3>
+              {profile?.preferredMatchGender ? (
                 <button
-                  key={item.key}
                   type="button"
-                  className="flex flex-col items-center justify-center gap-1 transition-colors"
-                  aria-current={isActive ? "page" : undefined}
+                  onClick={() => setShowPreferenceModal(false)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)]"
                 >
-                  <Icon
-                    className={`h-6 w-6 transition-colors ${
-                      isActive ? "text-[var(--color-rose-light)]" : "text-[var(--color-text-muted)]"
-                    }`}
-                  />
-                  <span
-                    className={`text-[10px] transition-colors ${
-                      isActive ? "text-[var(--color-rose-light)]" : "text-[var(--color-text-muted)]"
-                    }`}
-                  >
-                    {item.label}
-                  </span>
+                  <X className="h-4 w-4" />
                 </button>
-              );
-            })}
-          </div>
-        </nav>
-
-        {isMatchedModalOpen ? (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center px-6" role="presentation">
-            <div
-              className="absolute inset-0"
-              style={{
-                backgroundColor: "var(--color-drawer-backdrop)",
-                backdropFilter: "blur(3px)",
-              }}
-            />
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="copy-match-modal-title"
-              className="relative w-full max-w-sm rounded-3xl border border-[var(--color-border)] p-6 text-center"
-              style={{
-                backgroundColor: "var(--color-drawer-surface)",
-                color: "var(--color-text-primary)",
-                boxShadow: "0 18px 48px rgba(15, 23, 42, 0.28)",
-              }}
-            >
-              <h3 id="copy-match-modal-title" className="text-2xl font-semibold text-[var(--color-rose-light)]">
-                Matched!
-              </h3>
-              <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-                Your hold was successful. Continue when you are ready.
-              </p>
-              <button
-                type="button"
-                onClick={handleCloseMatchedModal}
-                autoFocus
-                className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-full px-6 text-sm font-semibold text-[var(--color-text-primary)]"
-                style={{
-                  background:
-                    "linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-light) 100%)",
-                }}
-              >
-                Continue
-              </button>
+              ) : null}
             </div>
+            <p className="mb-3 text-sm text-[var(--color-text-secondary)]">
+              This preference can be changed later.
+            </p>
+
+            <fieldset className="onboarding-gender-fieldset">
+              <div role="radiogroup" aria-label="Preferred gender selection" className="onboarding-gender-grid">
+                {onboardingGenderOptions.map((option) => {
+                  const Icon = genderOptionIcons[option.value];
+                  const isSelected = selectedPreferredGender === option.value;
+                  return (
+                    <label key={option.value} className="onboarding-gender-option">
+                      <input
+                        type="radio"
+                        name="preferredGender"
+                        value={option.value}
+                        checked={isSelected}
+                        onChange={() => setSelectedPreferredGender(option.value)}
+                        className="onboarding-gender-input"
+                      />
+                      <span className="onboarding-gender-card" data-selected={isSelected ? "true" : "false"}>
+                        <span className={`onboarding-gender-icon onboarding-gender-icon--${option.value}`}>
+                          <Icon className="h-6 w-6" />
+                        </span>
+                        <span className="onboarding-gender-title">{option.title}</span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+
+            <button
+              type="button"
+              disabled={!selectedPreferredGender || isSavingPreference}
+              onClick={() => {
+                void handleSavePreference();
+              }}
+              className="mt-4 min-h-[44px] w-full rounded-xl bg-[var(--color-rose)] px-4 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              {isSavingPreference ? "Saving..." : "Save preference"}
+            </button>
           </div>
-        ) : null}
-      </div>
-    </>
+        </div>
+      )}
+    </div>
   );
 }
