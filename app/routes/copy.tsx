@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
 import {
   Compass,
   Fingerprint,
@@ -7,52 +8,19 @@ import {
   Mic,
   X,
 } from "lucide-react";
+import { copyCarouselAvatars } from "../../data/copy-carousel";
+import {
+  COPY_CAROUSEL_ROTATE_MS,
+  COPY_CAROUSEL_TRANSITION_MS,
+  COPY_MATCH_HOLD_MS,
+  getCopyCarouselVisualState,
+  getHoldProgress,
+  getWrappedIndex,
+} from "../lib/copy-carousel";
 
 export const Route = createFileRoute("/copy")({
   component: CopyMatchPage,
 });
-
-type CarouselAvatar = {
-  id: number;
-  emoji: string;
-  gradient: string;
-  position: "far-left" | "left" | "center" | "right" | "far-right";
-  isCenter?: boolean;
-};
-
-const carouselAvatars: CarouselAvatar[] = [
-  {
-    id: 0,
-    emoji: "🤖",
-    gradient: "linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)",
-    position: "far-left",
-  },
-  {
-    id: 1,
-    emoji: "👹",
-    gradient: "linear-gradient(135deg, #3B82F6 0%, #2DD4BF 100%)",
-    position: "left",
-  },
-  {
-    id: 2,
-    emoji: "😢",
-    gradient: "linear-gradient(135deg, #14B8A6 0%, #2DD4BF 58%, #60A5FA 100%)",
-    position: "center",
-    isCenter: true,
-  },
-  {
-    id: 3,
-    emoji: "👾",
-    gradient: "linear-gradient(135deg, #1F2024 0%, #14B8A6 100%)",
-    position: "right",
-  },
-  {
-    id: 4,
-    emoji: "👻",
-    gradient: "linear-gradient(135deg, #1F2024 0%, #3B82F6 100%)",
-    position: "far-right",
-  },
-];
 
 type CopyNavItem = {
   key: string;
@@ -69,26 +37,136 @@ const navItems: CopyNavItem[] = [
 ];
 
 function CopyMatchPage() {
+  const [centerIndex, setCenterIndex] = useState(0);
+  const [isPressing, setIsPressing] = useState(false);
+  const [isMatchedModalOpen, setIsMatchedModalOpen] = useState(false);
+  const [holdProgress, setHoldProgress] = useState(0);
+  const avatarCount = copyCarouselAvatars.length;
+  const holdStartAtRef = useRef<number | null>(null);
+  const holdRafIdRef = useRef<number | null>(null);
+  const holdCompletedRef = useRef(false);
+  const isCarouselPaused = isPressing || isMatchedModalOpen;
+  const ringRadius = 54;
+  const ringCircumference = 2 * Math.PI * ringRadius;
+
+  const stopHoldAnimation = useCallback(() => {
+    if (holdRafIdRef.current !== null) {
+      window.cancelAnimationFrame(holdRafIdRef.current);
+      holdRafIdRef.current = null;
+    }
+  }, []);
+
+  const handleHoldComplete = useCallback(() => {
+    if (holdCompletedRef.current) return;
+    holdCompletedRef.current = true;
+    holdStartAtRef.current = null;
+    stopHoldAnimation();
+    setHoldProgress(1);
+    setIsPressing(false);
+    setIsMatchedModalOpen(true);
+  }, [stopHoldAnimation]);
+
+  const handlePressStart = useCallback(
+    (event: PointerEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      if (isPressing || isMatchedModalOpen || avatarCount <= 0) return;
+
+      stopHoldAnimation();
+      holdCompletedRef.current = false;
+      holdStartAtRef.current = performance.now();
+      setHoldProgress(0);
+      setIsPressing(true);
+
+      const tick = (nowMs: number) => {
+        const holdStart = holdStartAtRef.current;
+        if (holdStart === null) return;
+
+        const nextProgress = getHoldProgress(nowMs, holdStart, COPY_MATCH_HOLD_MS);
+        setHoldProgress(nextProgress);
+
+        if (nextProgress >= 1) {
+          handleHoldComplete();
+          return;
+        }
+
+        holdRafIdRef.current = window.requestAnimationFrame(tick);
+      };
+
+      holdRafIdRef.current = window.requestAnimationFrame(tick);
+    },
+    [avatarCount, handleHoldComplete, isMatchedModalOpen, isPressing, stopHoldAnimation],
+  );
+
+  const handlePressEnd = useCallback(
+    (event: PointerEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      if (holdCompletedRef.current) return;
+
+      holdStartAtRef.current = null;
+      stopHoldAnimation();
+      setIsPressing(false);
+      setHoldProgress(0);
+    },
+    [stopHoldAnimation],
+  );
+
+  const handleCloseMatchedModal = useCallback(() => {
+    holdStartAtRef.current = null;
+    holdCompletedRef.current = false;
+    stopHoldAnimation();
+    setHoldProgress(0);
+    setIsPressing(false);
+    setIsMatchedModalOpen(false);
+  }, [stopHoldAnimation]);
+
+  useEffect(() => {
+    if (avatarCount <= 1 || isCarouselPaused) return;
+
+    const intervalId = window.setInterval(() => {
+      setCenterIndex((prev) => getWrappedIndex(prev, 1, avatarCount));
+    }, COPY_CAROUSEL_ROTATE_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [avatarCount, isCarouselPaused]);
+
+  useEffect(() => {
+    return () => {
+      stopHoldAnimation();
+    };
+  }, [stopHoldAnimation]);
+
   return (
     <>
       <style>{`
         @keyframes copy-match-title-pulse {
           0%, 100% { opacity: 1; }
-          50% { opacity: 0.7; }
+          50% { opacity: 0.72; }
         }
         @keyframes copy-match-center-avatar-pulse {
-          0%, 100% { transform: scale(1.5); }
-          50% { transform: scale(1.55); }
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.04); }
         }
         @keyframes copy-match-center-glow {
-          0%, 100% { transform: scale(1.1); opacity: 0.3; }
-          50% { transform: scale(1.3); opacity: 0.5; }
+          0%, 100% { transform: scale(1.08); opacity: 0.26; }
+          50% { transform: scale(1.2); opacity: 0.44; }
+        }
+        .copy-match-carousel-item {
+          transition:
+            transform ${COPY_CAROUSEL_TRANSITION_MS}ms cubic-bezier(0.22, 1, 0.36, 1),
+            opacity ${COPY_CAROUSEL_TRANSITION_MS}ms cubic-bezier(0.22, 1, 0.36, 1),
+            filter ${COPY_CAROUSEL_TRANSITION_MS}ms cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: transform, opacity, filter;
         }
         @media (prefers-reduced-motion: reduce) {
           .copy-match-anim-title,
-          .copy-match-anim-center,
+          .copy-match-anim-center-shell,
           .copy-match-anim-glow {
             animation: none !important;
+          }
+          .copy-match-carousel-item {
+            transition: none !important;
           }
         }
       `}</style>
@@ -136,35 +214,51 @@ function CopyMatchPage() {
               </p>
 
               <div className="relative mb-12 flex h-40 w-full max-w-sm items-center justify-center">
-                {carouselAvatars.map((avatar) => {
-                  const isCenter = Boolean(avatar.isCenter);
-                  const isFar =
-                    avatar.position === "far-left" || avatar.position === "far-right";
-                  const scale = isCenter ? 1.5 : isFar ? 0.8 : 1;
-                  const opacity = isCenter ? 1 : isFar ? 0.3 : 0.6;
-                  const blur = isCenter ? 0 : isFar ? 8 : 2;
-
-                  let x = 0;
-                  if (avatar.position === "far-left") x = -180;
-                  if (avatar.position === "left") x = -100;
-                  if (avatar.position === "right") x = 100;
-                  if (avatar.position === "far-right") x = 180;
+                {copyCarouselAvatars.map((avatar, index) => {
+                  const visual = getCopyCarouselVisualState(index, centerIndex, avatarCount);
 
                   return (
                     <div
                       key={avatar.id}
-                      className={isCenter ? "copy-match-anim-center absolute" : "absolute"}
+                      className="copy-match-carousel-item absolute"
+                      aria-hidden={!visual.isVisible}
                       style={{
-                        transform: `translateX(${x}px) scale(${scale})`,
-                        opacity,
-                        filter: `blur(${blur}px) ${isCenter ? "saturate(1)" : "saturate(0.5)"}`,
-                        animation: isCenter
-                          ? "copy-match-center-avatar-pulse 2s ease-in-out infinite"
-                          : undefined,
+                        transform: `translateX(${visual.x}px) scale(${visual.scale})`,
+                        opacity: visual.opacity,
+                        filter: `blur(${visual.blur}px) saturate(${visual.saturation})`,
+                        zIndex: visual.zIndex,
+                        pointerEvents: visual.isVisible ? "auto" : "none",
                       }}
                     >
                       <div className="relative">
-                        {isCenter ? (
+                        {visual.isCenter && isPressing && !isMatchedModalOpen ? (
+                          <div className="pointer-events-none absolute -inset-3 z-20">
+                            <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
+                              <circle
+                                cx="60"
+                                cy="60"
+                                r={ringRadius}
+                                fill="none"
+                                stroke="var(--color-border)"
+                                strokeWidth="4"
+                                opacity="0.5"
+                              />
+                              <circle
+                                cx="60"
+                                cy="60"
+                                r={ringRadius}
+                                fill="none"
+                                stroke="var(--color-rose-light)"
+                                strokeWidth="5"
+                                strokeLinecap="round"
+                                strokeDasharray={ringCircumference}
+                                strokeDashoffset={ringCircumference * (1 - holdProgress)}
+                              />
+                            </svg>
+                          </div>
+                        ) : null}
+
+                        {visual.isCenter ? (
                           <div
                             className="copy-match-anim-glow absolute inset-0 rounded-full bg-[var(--color-rose)]"
                             style={{
@@ -176,8 +270,15 @@ function CopyMatchPage() {
                         ) : null}
 
                         <div
-                          className="relative flex h-24 w-24 items-center justify-center rounded-full border-2 border-white/20 shadow-xl"
-                          style={{ background: avatar.gradient }}
+                          className={`relative flex h-24 w-24 items-center justify-center rounded-full border-2 border-white/20 shadow-xl ${
+                            visual.isCenter ? "copy-match-anim-center-shell" : ""
+                          }`}
+                          style={{
+                            background: avatar.gradient,
+                            animation: visual.isCenter
+                              ? "copy-match-center-avatar-pulse 2s ease-in-out infinite"
+                              : undefined,
+                          }}
                         >
                           <span className="text-5xl" style={{ filter: "none" }}>
                             {avatar.emoji}
@@ -191,8 +292,14 @@ function CopyMatchPage() {
 
               <button
                 type="button"
-                aria-label="Cancel matching"
-                className="flex h-24 w-24 items-center justify-center rounded-full text-white shadow-2xl active:scale-95"
+                aria-label="Press and hold to match"
+                aria-pressed={isPressing}
+                disabled={isMatchedModalOpen}
+                onPointerDown={handlePressStart}
+                onPointerUp={handlePressEnd}
+                onPointerCancel={handlePressEnd}
+                onPointerLeave={handlePressEnd}
+                className="flex h-24 w-24 items-center justify-center rounded-full text-white shadow-2xl active:scale-95 disabled:opacity-70"
                 style={{
                   background:
                     "linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-light) 100%)",
@@ -245,6 +352,48 @@ function CopyMatchPage() {
             })}
           </div>
         </nav>
+
+        {isMatchedModalOpen ? (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center px-6" role="presentation">
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundColor: "var(--color-drawer-backdrop)",
+                backdropFilter: "blur(3px)",
+              }}
+            />
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="copy-match-modal-title"
+              className="relative w-full max-w-sm rounded-3xl border border-[var(--color-border)] p-6 text-center"
+              style={{
+                backgroundColor: "var(--color-drawer-surface)",
+                color: "var(--color-text-primary)",
+                boxShadow: "0 18px 48px rgba(15, 23, 42, 0.28)",
+              }}
+            >
+              <h3 id="copy-match-modal-title" className="text-2xl font-semibold text-[var(--color-rose-light)]">
+                Matched!
+              </h3>
+              <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+                Your hold was successful. Continue when you are ready.
+              </p>
+              <button
+                type="button"
+                onClick={handleCloseMatchedModal}
+                autoFocus
+                className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-full px-6 text-sm font-semibold text-[var(--color-text-primary)]"
+                style={{
+                  background:
+                    "linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-light) 100%)",
+                }}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
     </>
   );
