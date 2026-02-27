@@ -18,6 +18,7 @@ import { Route as SessionRouteImport } from './routes/session'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as CopyRouteImport } from './routes/copy'
 import { Route as ChatRouteImport } from './routes/chat'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SessionIndexRouteImport } from './routes/session/index'
 import { Route as SessionListRouteImport } from './routes/session/list'
@@ -71,6 +72,11 @@ const ChatRoute = ChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -109,6 +115,7 @@ const Soul_gameChatSessionIdRoute = Soul_gameChatSessionIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/chat': typeof ChatRoute
   '/copy': typeof CopyRoute
   '/forgot-password': typeof ForgotPasswordRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/chat': typeof ChatRoute
   '/copy': typeof CopyRoute
   '/forgot-password': typeof ForgotPasswordRoute
@@ -145,6 +153,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/chat': typeof ChatRoute
   '/copy': typeof CopyRoute
   '/forgot-password': typeof ForgotPasswordRoute
@@ -165,6 +174,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/chat'
     | '/copy'
     | '/forgot-password'
@@ -183,6 +193,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/chat'
     | '/copy'
     | '/forgot-password'
@@ -200,6 +211,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/chat'
     | '/copy'
     | '/forgot-password'
@@ -219,6 +231,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   ChatRoute: typeof ChatRoute
   CopyRoute: typeof CopyRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
@@ -294,6 +307,13 @@ declare module '@tanstack/react-router' {
       path: '/chat'
       fullPath: '/chat'
       preLoaderRoute: typeof ChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -379,6 +399,7 @@ const Soul_gameRouteWithChildren = Soul_gameRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   ChatRoute: ChatRoute,
   CopyRoute: CopyRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,

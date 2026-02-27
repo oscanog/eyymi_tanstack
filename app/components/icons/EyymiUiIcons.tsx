@@ -107,6 +107,62 @@ export function PlanetOrbitIcon({ className, ...props }: IconProps) {
   );
 }
 
+export function GenderMaleIcon({ className, ...props }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} {...props}>
+      <circle cx="9" cy="15" r="5" stroke="currentColor" strokeWidth="2.2" />
+      <path d="M13.5 10.5L20 4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M15.5 4H20V8.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function GenderFemaleIcon({ className, ...props }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} {...props}>
+      <circle cx="12" cy="8" r="5" stroke="currentColor" strokeWidth="2.2" />
+      <path d="M12 13V20" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M8.5 16.5H15.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function GenderGayIcon({ className, ...props }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} {...props}>
+      <defs>
+        <linearGradient id="genderGayGrad" x1="4" y1="4" x2="20" y2="20" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#7C3AED" />
+          <stop offset="1" stopColor="#06B6D4" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M12 20C11.6 20 11.2 19.86 10.86 19.58C8.36 17.56 6.62 15.98 5.62 14.86C4.56 13.7 4 12.36 4 10.92C4 8.56 5.74 6.8 8 6.8C9.28 6.8 10.52 7.38 11.32 8.32L12 9.1L12.68 8.32C13.48 7.38 14.72 6.8 16 6.8C18.26 6.8 20 8.56 20 10.92C20 12.36 19.44 13.7 18.38 14.86C17.38 15.98 15.64 17.56 13.14 19.58C12.8 19.86 12.4 20 12 20Z"
+        fill="url(#genderGayGrad)"
+      />
+    </svg>
+  );
+}
+
+export function GenderLesbianIcon({ className, ...props }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} {...props}>
+      <defs>
+        <linearGradient id="genderLesbianGrad" x1="5" y1="5" x2="19" y2="19" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#FB923C" />
+          <stop offset="1" stopColor="#F97316" />
+        </linearGradient>
+      </defs>
+      <path d="M8.5 7.8A3.7 3.7 0 1 1 8.5 15.2A3.7 3.7 0 0 1 8.5 7.8Z" fill="url(#genderLesbianGrad)" />
+      <path d="M15.5 7.8A3.7 3.7 0 1 1 15.5 15.2A3.7 3.7 0 0 1 15.5 7.8Z" fill="url(#genderLesbianGrad)" />
+      <path d="M8.5 15.2V19.2" stroke="#FDBA74" strokeWidth="2" strokeLinecap="round" />
+      <path d="M15.5 15.2V19.2" stroke="#FDBA74" strokeWidth="2" strokeLinecap="round" />
+      <path d="M6.7 17.3H10.3" stroke="#FDBA74" strokeWidth="2" strokeLinecap="round" />
+      <path d="M13.7 17.3H17.3" stroke="#FDBA74" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function FilterSlidersIcon({ className, ...props }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} {...props}>
@@ -195,4 +251,3 @@ export function BottomProfileIcon({ className, ...props }: IconProps) {
     </svg>
   );
 }
-

@@ -1,4 +1,5 @@
 import { Navigate, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { LogOut } from "lucide-react";
 import { useState } from "react";
 import { otpAuthStorage } from "@/lib/otpAuth";
 import { storage } from "@/lib/storage";
@@ -26,6 +27,7 @@ export const Route = createFileRoute("/welcome")({
 function WelcomePlaceholderPage() {
   const navigate = useNavigate();
   const [isUsersDrawerOpen, setIsUsersDrawerOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const username = storage.getUsername();
   const userId = storage.getUserId();
   const hasOtpAuth = otpAuthStorage.hasValidSession();
@@ -38,6 +40,12 @@ function WelcomePlaceholderPage() {
   if (!hasOtpAuth) {
     return <Navigate to="/signin" />;
   }
+
+  const handleConfirmLogout = () => {
+    otpAuthStorage.clear();
+    storage.clear();
+    void navigate({ to: "/signin" });
+  };
 
   const greeting = username ? `Welcome, ${username}` : "Welcome to eyymi";
 
@@ -54,6 +62,53 @@ function WelcomePlaceholderPage() {
           onClose={() => setIsUsersDrawerOpen(false)}
           variant="welcome"
         />
+
+        {isLogoutModalOpen && (
+          <>
+            <button
+              type="button"
+              aria-label="Close logout confirmation"
+              onClick={() => setIsLogoutModalOpen(false)}
+              className="fixed inset-0 z-[980]"
+              style={{ backgroundColor: "var(--color-modal-backdrop)" }}
+            />
+            <div className="fixed inset-0 z-[990] flex items-center justify-center px-5">
+              <div
+                className="w-full max-w-sm rounded-2xl border p-4 shadow-[0_24px_56px_rgba(0,0,0,0.35)]"
+                style={{
+                  backgroundColor: "var(--color-modal-surface)",
+                  borderColor: "var(--color-modal-border)",
+                }}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="logout-confirm-title"
+              >
+                <h2 id="logout-confirm-title" className="text-base font-semibold text-[var(--color-modal-text)]">
+                  Log out from eyymi?
+                </h2>
+                <p className="mt-2 text-sm text-[var(--color-modal-text-muted)]">
+                  You will be signed out from this device and need to sign in again.
+                </p>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsLogoutModalOpen(false)}
+                    className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-[var(--color-modal-border)] bg-[var(--color-modal-muted-bg)] text-sm font-semibold text-[var(--color-modal-text)]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmLogout}
+                    className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[var(--color-rose)] text-sm font-semibold text-white"
+                  >
+                    Log out
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
 
         <header className="safe-area-inset pt-4 pb-3">
           <div className="flex items-center justify-between">
@@ -75,9 +130,20 @@ function WelcomePlaceholderPage() {
               <img src="/eyymi-handmark.svg" alt="eyymi" className="h-8 w-8 rounded-full" />
               <p className="text-xl font-semibold tracking-tight">eyymi</p>
             </div>
-            <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-drawer-item-bg)]">
-              <img src="/eyymi-handmark.svg" alt="" className="h-6 w-6 rounded-full opacity-90" />
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsLogoutModalOpen(true)}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border transition duration-200 hover:brightness-110 active:scale-95"
+              style={{
+                borderColor: "var(--color-drawer-polish-trigger-border)",
+                background: "var(--color-drawer-polish-trigger-bg)",
+                color: "var(--color-rose)",
+                boxShadow: "var(--color-drawer-polish-trigger-shadow)",
+              }}
+              aria-label="Log out"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
           </div>
           <p className="mt-3 text-sm text-[var(--color-text-secondary)]">{greeting}</p>
         </header>

@@ -93,6 +93,17 @@
   --color-onboard-suggestion-text: #d4d4d8;
   --color-onboard-suggestion-chip-bg: rgba(20, 184, 166, 0.14);
   --color-onboard-suggestion-chip-text: #76f5e7;
+  --color-onboard-gender-card-bg: rgba(255, 255, 255, 0.04);
+  --color-onboard-gender-card-border: rgba(255, 255, 255, 0.12);
+  --color-onboard-gender-card-hover: rgba(255, 255, 255, 0.07);
+  --color-onboard-gender-card-selected-bg: rgba(20, 184, 166, 0.14);
+  --color-onboard-gender-card-selected-border: rgba(20, 184, 166, 0.52);
+  --color-onboard-gender-card-shadow: 0 14px 30px rgba(0, 0, 0, 0.2);
+  --color-onboard-gender-focus-ring: rgba(20, 184, 166, 0.42);
+  --color-onboard-gender-male: #60a5fa;
+  --color-onboard-gender-female: #fb7185;
+  --color-onboard-gender-gay: #7c83ff;
+  --color-onboard-gender-lesbian: #fb923c;
 
   /* Live route visuals */
   --route-line-halo: rgba(255, 255, 255, 0.72);
@@ -227,6 +238,17 @@
   --color-onboard-suggestion-text: #334155;
   --color-onboard-suggestion-chip-bg: rgba(20, 184, 166, 0.1);
   --color-onboard-suggestion-chip-text: #0f6e66;
+  --color-onboard-gender-card-bg: rgba(15, 23, 42, 0.03);
+  --color-onboard-gender-card-border: rgba(15, 23, 42, 0.15);
+  --color-onboard-gender-card-hover: rgba(15, 23, 42, 0.06);
+  --color-onboard-gender-card-selected-bg: rgba(20, 184, 166, 0.1);
+  --color-onboard-gender-card-selected-border: rgba(20, 184, 166, 0.38);
+  --color-onboard-gender-card-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
+  --color-onboard-gender-focus-ring: rgba(20, 184, 166, 0.34);
+  --color-onboard-gender-male: #2563eb;
+  --color-onboard-gender-female: #e11d48;
+  --color-onboard-gender-gay: #5b56ff;
+  --color-onboard-gender-lesbian: #ea580c;
   --route-line-halo: rgba(19, 20, 24, 0.45);
   --route-line-core: #14b8a6;
   --route-chip-bg: rgba(255, 255, 255, 0.92);
@@ -313,6 +335,17 @@
   --color-onboard-suggestion-text: #d4d4d8;
   --color-onboard-suggestion-chip-bg: rgba(20, 184, 166, 0.14);
   --color-onboard-suggestion-chip-text: #7ef5e8;
+  --color-onboard-gender-card-bg: rgba(255, 255, 255, 0.04);
+  --color-onboard-gender-card-border: rgba(255, 255, 255, 0.12);
+  --color-onboard-gender-card-hover: rgba(255, 255, 255, 0.07);
+  --color-onboard-gender-card-selected-bg: rgba(20, 184, 166, 0.14);
+  --color-onboard-gender-card-selected-border: rgba(20, 184, 166, 0.52);
+  --color-onboard-gender-card-shadow: 0 14px 30px rgba(0, 0, 0, 0.2);
+  --color-onboard-gender-focus-ring: rgba(20, 184, 166, 0.42);
+  --color-onboard-gender-male: #60a5fa;
+  --color-onboard-gender-female: #fb7185;
+  --color-onboard-gender-gay: #7c83ff;
+  --color-onboard-gender-lesbian: #fb923c;
   --route-line-halo: rgba(255, 255, 255, 0.72);
   --route-line-core: #14b8a6;
   --route-chip-bg: rgba(16, 17, 20, 0.78);
@@ -400,6 +433,17 @@
     --color-onboard-suggestion-text: #334155;
     --color-onboard-suggestion-chip-bg: rgba(20, 184, 166, 0.1);
     --color-onboard-suggestion-chip-text: #0f6e66;
+    --color-onboard-gender-card-bg: rgba(15, 23, 42, 0.03);
+    --color-onboard-gender-card-border: rgba(15, 23, 42, 0.15);
+    --color-onboard-gender-card-hover: rgba(15, 23, 42, 0.06);
+    --color-onboard-gender-card-selected-bg: rgba(20, 184, 166, 0.1);
+    --color-onboard-gender-card-selected-border: rgba(20, 184, 166, 0.38);
+    --color-onboard-gender-card-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
+    --color-onboard-gender-focus-ring: rgba(20, 184, 166, 0.34);
+    --color-onboard-gender-male: #2563eb;
+    --color-onboard-gender-female: #e11d48;
+    --color-onboard-gender-gay: #5b56ff;
+    --color-onboard-gender-lesbian: #ea580c;
     --route-line-halo: rgba(19, 20, 24, 0.45);
     --route-line-core: #14b8a6;
     --route-chip-bg: rgba(255, 255, 255, 0.92);
@@ -555,7 +599,8 @@ body {
   .camera-fab,
   .meeting-status-chip,
   .auth-loading-progress,
-  .onboarding-step-enter {
+  .onboarding-step-enter,
+  .onboarding-gender-card {
     transition: none !important;
     animation: none !important;
   }
@@ -806,6 +851,111 @@ a,
 .username-input-autofill {
   border-color: rgba(0, 200, 83, 0.78) !important;
   animation: username-autofill 620ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.onboarding-gender-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.onboarding-gender-fieldset.has-error .onboarding-gender-card {
+  border-color: rgba(239, 68, 68, 0.42);
+}
+
+.onboarding-gender-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.onboarding-gender-option {
+  position: relative;
+  display: block;
+}
+
+.onboarding-gender-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.onboarding-gender-card {
+  display: flex;
+  min-height: 124px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 8px;
+  border-radius: 16px;
+  border: 1px solid var(--color-onboard-gender-card-border);
+  background: var(--color-onboard-gender-card-bg);
+  padding: 14px 12px;
+  box-shadow: var(--color-onboard-gender-card-shadow);
+  transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.onboarding-gender-input:hover + .onboarding-gender-card {
+  background: var(--color-onboard-gender-card-hover);
+  transform: translateY(-1px);
+}
+
+.onboarding-gender-input:checked + .onboarding-gender-card,
+.onboarding-gender-card[data-selected="true"] {
+  border-color: var(--color-onboard-gender-card-selected-border);
+  background: var(--color-onboard-gender-card-selected-bg);
+  box-shadow: 0 0 0 1px var(--color-onboard-gender-card-selected-border), var(--color-onboard-gender-card-shadow);
+}
+
+.onboarding-gender-input:focus-visible + .onboarding-gender-card {
+  box-shadow: 0 0 0 2px var(--color-onboard-gender-focus-ring), var(--color-onboard-gender-card-shadow);
+}
+
+.onboarding-gender-icon {
+  display: inline-flex;
+  height: 40px;
+  width: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.onboarding-gender-icon--male {
+  color: var(--color-onboard-gender-male);
+}
+
+.onboarding-gender-icon--female {
+  color: var(--color-onboard-gender-female);
+}
+
+.onboarding-gender-icon--gay {
+  color: var(--color-onboard-gender-gay);
+}
+
+.onboarding-gender-icon--lesbian {
+  color: var(--color-onboard-gender-lesbian);
+}
+
+.onboarding-gender-title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-text-primary);
+}
+
+.onboarding-gender-subtitle {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 380px) {
+  .onboarding-gender-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .identity-recovery-card {

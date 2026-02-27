@@ -7,6 +7,7 @@ declare module '*.css' {
 
 interface ImportMetaEnv {
   readonly VITE_CONVEX_URL: string
+  readonly VITE_APP_ENV?: string
 }
 
 interface ImportMeta {

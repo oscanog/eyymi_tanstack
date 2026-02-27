@@ -1,7 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { convexMutation } from "@/lib/convex";
 import { otpAuthStorage } from "@/lib/otpAuth";
+import {
+  buildOnboardingUpsertArgs,
+  canContinueFromUsername,
+  canFinishOnboarding,
+  getGenderStepIndex,
+  getOnboardingTotalSteps,
+  getUsernameStepIndex,
+} from "@/lib/onboarding.helpers";
 import { storage } from "@/lib/storage";
 import {
   parseSuggestedUsername,
@@ -12,8 +20,15 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { AuthCard } from "@/components/auth/AuthCard";
-import { RoutePulseIcon, TrustLinkIcon } from "@/components/icons";
-import { signupOnboardingSlides } from "../../data";
+import {
+  GenderFemaleIcon,
+  GenderGayIcon,
+  GenderLesbianIcon,
+  GenderMaleIcon,
+  RoutePulseIcon,
+  TrustLinkIcon,
+} from "@/components/icons";
+import { onboardingGenderOptions, signupOnboardingSlides, type GenderOption } from "../../data";
 
 export const Route = createFileRoute("/")({
   component: SignupOnboardingPage,
@@ -26,9 +41,17 @@ interface User {
   _id: string;
   deviceId: string;
   username: string;
+  gender?: GenderOption;
   isOnline: boolean;
   lastSeen: number;
 }
+
+const genderOptionIcons: Record<GenderOption, ComponentType<{ className?: string }>> = {
+  male: GenderMaleIcon,
+  female: GenderFemaleIcon,
+  gay: GenderGayIcon,
+  lesbian: GenderLesbianIcon,
+};
 
 function SignupOnboardingPage() {
   const navigate = useNavigate();
@@ -37,15 +60,22 @@ function SignupOnboardingPage() {
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [genderError, setGenderError] = useState<string | null>(null);
   const [suggestedUsername, setSuggestedUsername] = useState<string | null>(null);
   const [isSuggestionApplied, setIsSuggestionApplied] = useState(false);
+  const [selectedGender, setSelectedGender] = useState<GenderOption | null>(null);
   const [isChecking, setIsChecking] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const totalSteps = 3;
-  const isUsernameStep = stepIndex === 2;
+  const totalSteps = getOnboardingTotalSteps();
+  const isUsernameStep = stepIndex === getUsernameStepIndex();
+  const isGenderStep = stepIndex === getGenderStepIndex();
+  const isFeatureStep = stepIndex < signupOnboardingSlides.length;
 
-  const currentFeatureSlide = useMemo(() => signupOnboardingSlides[stepIndex], [stepIndex]);
+  const currentFeatureSlide = useMemo(
+    () => (isFeatureStep ? signupOnboardingSlides[stepIndex] : null),
+    [isFeatureStep, stepIndex]
+  );
 
   const applySuggestedUsername = (nextUsername: string) => {
     setUsername(nextUsername);
@@ -78,27 +108,53 @@ function SignupOnboardingPage() {
     }
   }, [isChecking, isUsernameStep]);
 
-  const handleSubmitUsername = async (e: React.FormEvent) => {
+  const handleSubmitUsername = (e: React.FormEvent) => {
     e.preventDefault();
 
     const normalizedUsername = sanitizeUsernameInput(username);
 
-    if (!normalizedUsername || normalizedUsername.length < USERNAME_MIN_LENGTH) {
+    if (!canContinueFromUsername(normalizedUsername)) {
       setError(`Username must be at least ${USERNAME_MIN_LENGTH} characters`);
       setSuggestedUsername(null);
       return;
     }
 
+    setUsername(normalizedUsername);
+    setError(null);
+    setGenderError(null);
+    setStepDirection("forward");
+    setStepIndex(getGenderStepIndex());
+  };
+
+  const handleSubmitGender = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!canFinishOnboarding(selectedGender)) {
+      setGenderError("Please choose one card before finishing your setup.");
+      return;
+    }
+
+    const normalizedUsername = sanitizeUsernameInput(username);
+
+    if (!canContinueFromUsername(normalizedUsername)) {
+      setError(`Username must be at least ${USERNAME_MIN_LENGTH} characters`);
+      setStepDirection("backward");
+      setStepIndex(getUsernameStepIndex());
+      return;
+    }
+
+    setUsername(normalizedUsername);
     setIsLoading(true);
     setError(null);
+    setGenderError(null);
 
     try {
       const deviceId = crypto.randomUUID();
 
-      const user = await convexMutation<User>("users:upsert", {
-        deviceId,
-        username: normalizedUsername,
-      });
+      const user = await convexMutation<User>(
+        "users:upsert",
+        buildOnboardingUpsertArgs(deviceId, normalizedUsername, selectedGender)
+      );
 
       storage.setAuthData(deviceId, user.username, user._id);
       navigate({ to: "/welcome" });
@@ -118,9 +174,11 @@ function SignupOnboardingPage() {
           setSuggestedUsername(null);
         }
       } else {
-        setError("Failed to create your username. Please try again.");
+        setError("Failed to create your profile. Please try again.");
         setSuggestedUsername(null);
       }
+      setStepDirection("backward");
+      setStepIndex(getUsernameStepIndex());
       setIsLoading(false);
     }
   };
@@ -160,10 +218,11 @@ function SignupOnboardingPage() {
           eyymi
         </div>
 
-        <div className="mb-4 flex items-center gap-2">
+        <div className="mb-4 flex items-center gap-2" data-testid="onboarding-progress">
           {Array.from({ length: totalSteps }).map((_, index) => (
             <span
               key={index}
+              data-testid="onboarding-progress-dot"
               className={`h-1.5 rounded-full transition-all duration-300 ${
                 index === stepIndex
                   ? "w-8 bg-[var(--color-rose)]"
@@ -183,14 +242,22 @@ function SignupOnboardingPage() {
           }`}
         >
           <AuthCard
-            title={isUsernameStep ? "Create your username" : "Welcome to eyymi"}
+            title={
+              isUsernameStep
+                ? "Create your username"
+                : isGenderStep
+                  ? "Choose your card"
+                  : "Welcome to eyymi"
+            }
             subtitle={
               isUsernameStep
-                ? "Choose your public username to finish your setup."
-                : "A quick walkthrough before you start using the app."
+                ? "Choose your public username to continue your setup."
+                : isGenderStep
+                  ? "Select the option that fits you best."
+                  : "A quick walkthrough before you start using the app."
             }
           >
-            {!isUsernameStep && currentFeatureSlide ? (
+            {isFeatureStep && currentFeatureSlide ? (
               <div>
                 <div className="mb-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-drawer-item-bg)] p-4">
                   <div className="mb-3 flex items-center gap-3">
@@ -235,7 +302,7 @@ function SignupOnboardingPage() {
                   </Button>
                 </div>
               </div>
-            ) : (
+            ) : isUsernameStep ? (
               <form onSubmit={handleSubmitUsername} className="space-y-5">
                 <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-drawer-item-bg)] p-3">
                   <p className="text-sm text-[var(--color-text-secondary)]">
@@ -282,8 +349,67 @@ function SignupOnboardingPage() {
                   </Button>
                   <Button
                     type="submit"
+                    disabled={!canContinueFromUsername(username)}
+                    className="flex-1"
+                  >
+                    Continue
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleSubmitGender} className="space-y-5">
+                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-drawer-item-bg)] p-3">
+                  <p className="text-sm text-[var(--color-text-secondary)]">
+                    Pick one card to complete your profile. You can update this later.
+                  </p>
+                </div>
+
+                <fieldset className={`onboarding-gender-fieldset ${genderError ? "has-error" : ""}`}>
+                  <legend className="sr-only">Gender card selection</legend>
+                  <div role="radiogroup" aria-label="Gender card selection" className="onboarding-gender-grid">
+                    {onboardingGenderOptions.map((option) => {
+                      const Icon = genderOptionIcons[option.value];
+                      const isSelected = selectedGender === option.value;
+                      return (
+                        <label key={option.value} className="onboarding-gender-option">
+                          <input
+                            type="radio"
+                            name="gender"
+                            value={option.value}
+                            checked={isSelected}
+                            onChange={() => {
+                              setSelectedGender(option.value);
+                              setGenderError(null);
+                            }}
+                            className="onboarding-gender-input"
+                          />
+                          <span
+                            className="onboarding-gender-card"
+                            data-testid={`gender-card-${option.value}`}
+                            data-selected={isSelected ? "true" : "false"}
+                          >
+                            <span className={`onboarding-gender-icon onboarding-gender-icon--${option.value}`}>
+                              <Icon className="h-6 w-6" />
+                            </span>
+                            <span className="onboarding-gender-title">{option.title}</span>
+                            <span className="onboarding-gender-subtitle">{option.subtitle}</span>
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+
+                {genderError ? <StatusMessage tone="error" message={genderError} compact /> : null}
+
+                <div className="flex items-center justify-between gap-3">
+                  <Button type="button" variant="secondary" onClick={handleBack} className="flex-1">
+                    Back
+                  </Button>
+                  <Button
+                    type="submit"
                     isLoading={isLoading}
-                    disabled={isLoading || username.trim().length < USERNAME_MIN_LENGTH}
+                    disabled={isLoading || !canFinishOnboarding(selectedGender)}
                     className="flex-1"
                   >
                     Finish
@@ -299,4 +425,3 @@ function SignupOnboardingPage() {
 }
 
 export default SignupOnboardingPage;
-

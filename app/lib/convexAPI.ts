@@ -52,6 +52,10 @@ export const api = {
     getHistory: "locations/getHistory" as const,
     getBothLocations: "locations/getBothLocations" as const,
   },
+  admin: {
+    deployDummyUsers: "admin/deployDummyUsers" as const,
+    getDummyUsersStatus: "admin/getDummyUsersStatus" as const,
+  },
 };
 
 // Type helper for function references
