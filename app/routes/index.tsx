@@ -9,6 +9,8 @@ import {
   getGenderStepIndex,
   getOnboardingTotalSteps,
   getUsernameStepIndex,
+  onboardingGenderCopy,
+  pickRandomCopyAvatarId,
 } from "@/lib/onboarding.helpers";
 import { storage } from "@/lib/storage";
 import {
@@ -42,6 +44,7 @@ interface User {
   deviceId: string;
   username: string;
   gender?: GenderOption;
+  avatarId?: string;
   isOnline: boolean;
   lastSeen: number;
 }
@@ -130,7 +133,7 @@ function SignupOnboardingPage() {
     e.preventDefault();
 
     if (!canFinishOnboarding(selectedGender)) {
-      setGenderError("Please choose one card before finishing your setup.");
+      setGenderError(onboardingGenderCopy.validationError);
       return;
     }
 
@@ -150,10 +153,11 @@ function SignupOnboardingPage() {
 
     try {
       const deviceId = crypto.randomUUID();
+      const avatarId = pickRandomCopyAvatarId();
 
       const user = await convexMutation<User>(
         "users:upsert",
-        buildOnboardingUpsertArgs(deviceId, normalizedUsername, selectedGender)
+        buildOnboardingUpsertArgs(deviceId, normalizedUsername, selectedGender, avatarId)
       );
 
       storage.setAuthData(deviceId, user.username, user._id);
@@ -246,14 +250,14 @@ function SignupOnboardingPage() {
               isUsernameStep
                 ? "Create your username"
                 : isGenderStep
-                  ? "Choose your card"
+                  ? onboardingGenderCopy.title
                   : "Welcome to eyymi"
             }
             subtitle={
               isUsernameStep
                 ? "Choose your public username to continue your setup."
                 : isGenderStep
-                  ? "Select the option that fits you best."
+                  ? onboardingGenderCopy.subtitle
                   : "A quick walkthrough before you start using the app."
             }
           >
@@ -357,16 +361,20 @@ function SignupOnboardingPage() {
                 </div>
               </form>
             ) : (
-              <form onSubmit={handleSubmitGender} className="space-y-5">
+              <form onSubmit={handleSubmitGender} className="space-y-6">
                 <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-drawer-item-bg)] p-3">
                   <p className="text-sm text-[var(--color-text-secondary)]">
-                    Pick one card to complete your profile. You can update this later.
+                    {onboardingGenderCopy.helperText}
                   </p>
                 </div>
 
                 <fieldset className={`onboarding-gender-fieldset ${genderError ? "has-error" : ""}`}>
-                  <legend className="sr-only">Gender card selection</legend>
-                  <div role="radiogroup" aria-label="Gender card selection" className="onboarding-gender-grid">
+                  <legend className="sr-only">{onboardingGenderCopy.legend}</legend>
+                  <div
+                    role="radiogroup"
+                    aria-label={onboardingGenderCopy.groupLabel}
+                    className="onboarding-gender-grid"
+                  >
                     {onboardingGenderOptions.map((option) => {
                       const Icon = genderOptionIcons[option.value];
                       const isSelected = selectedGender === option.value;
@@ -392,7 +400,6 @@ function SignupOnboardingPage() {
                               <Icon className="h-6 w-6" />
                             </span>
                             <span className="onboarding-gender-title">{option.title}</span>
-                            <span className="onboarding-gender-subtitle">{option.subtitle}</span>
                           </span>
                         </label>
                       );
@@ -402,7 +409,7 @@ function SignupOnboardingPage() {
 
                 {genderError ? <StatusMessage tone="error" message={genderError} compact /> : null}
 
-                <div className="flex items-center justify-between gap-3">
+                <div className="onboarding-gender-actions flex items-center justify-between gap-3">
                   <Button type="button" variant="secondary" onClick={handleBack} className="flex-1">
                     Back
                   </Button>

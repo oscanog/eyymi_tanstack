@@ -14,22 +14,24 @@ describe("admin helpers", () => {
     expect(isLocalAppEnv(undefined)).toBe(false)
   })
 
-  it("shows modal trigger only when deployment is active with exactly 10 users", () => {
-    const activeTen: DummyUsersStatus = {
+  it("shows modal trigger only when deployment is active with exactly 40 users", () => {
+    const activeForty: DummyUsersStatus = {
       isActive: true,
       startedAt: 1,
       expiresAt: 2,
       remainingMs: 1000,
-      users: Array.from({ length: 10 }, (_, index) => ({
+      users: Array.from({ length: 40 }, (_, index) => ({
         slot: index + 1,
         userId: `id-${index + 1}`,
         username: `dummy_user_${String(index + 1).padStart(2, "0")}`,
       })),
     }
 
-    expect(shouldShowDummyUsersModalTrigger(activeTen)).toBe(true)
-    expect(shouldShowDummyUsersModalTrigger({ ...activeTen, isActive: false })).toBe(false)
-    expect(shouldShowDummyUsersModalTrigger({ ...activeTen, users: activeTen.users.slice(0, 9) })).toBe(false)
+    expect(shouldShowDummyUsersModalTrigger(activeForty)).toBe(true)
+    expect(shouldShowDummyUsersModalTrigger({ ...activeForty, isActive: false })).toBe(false)
+    expect(
+      shouldShowDummyUsersModalTrigger({ ...activeForty, users: activeForty.users.slice(0, 39) }),
+    ).toBe(false)
   })
 
   it("formats numbered users by slot order", () => {

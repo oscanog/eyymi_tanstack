@@ -6,6 +6,8 @@ import {
   getGenderStepIndex,
   getOnboardingTotalSteps,
   getUsernameStepIndex,
+  onboardingGenderCopy,
+  pickRandomCopyAvatarId,
 } from "./onboarding.helpers";
 
 describe("onboarding helpers", () => {
@@ -27,11 +29,28 @@ describe("onboarding helpers", () => {
     expect(canFinishOnboarding("male")).toBe(true);
   });
 
-  it("builds users:upsert payload with username and gender", () => {
-    expect(buildOnboardingUpsertArgs("device-1", "  melvin  ", "lesbian")).toEqual({
+  it("builds users:upsert payload with username, gender, and avatar", () => {
+    expect(buildOnboardingUpsertArgs("device-1", "  melvin  ", "lesbian", "copy-ava-07")).toEqual({
       deviceId: "device-1",
       username: "melvin",
       gender: "lesbian",
+      avatarId: "copy-ava-07",
     });
+  });
+
+  it("picks random avatar id from copy carousel list", () => {
+    expect(pickRandomCopyAvatarId(() => 0)).toBe("copy-ava-01");
+    expect(pickRandomCopyAvatarId(() => 0.999999)).toBe("copy-ava-10");
+    expect(pickRandomCopyAvatarId(() => Number.NaN)).toBe("copy-ava-01");
+  });
+
+  it("keeps step 4 copy explicit about signed-up user gender", () => {
+    expect(onboardingGenderCopy.title).toBe("Select your gender");
+    expect(onboardingGenderCopy.subtitle).toBe("This is your gender on your profile.");
+    expect(onboardingGenderCopy.helperText).toContain("saved to your profile");
+    expect(onboardingGenderCopy.validationError).toBe(
+      "Please select your gender before finishing setup."
+    );
+    expect(onboardingGenderCopy.groupLabel).toBe("Your gender selection");
   });
 });

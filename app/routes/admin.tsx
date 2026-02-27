@@ -95,9 +95,12 @@ function AdminPage() {
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-sm uppercase tracking-wide text-[var(--color-text-muted)]">Available Now</p>
-              <h2 className="mt-1 text-base font-semibold">Deploy 10 online dummy users (10 minutes)</h2>
+              <h2 className="mt-1 text-base font-semibold">Deploy 40 online dummy users (10 minutes)</h2>
               <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                Re-running while active resets the same 10 users to a fresh 10-minute window.
+                Re-running while active resets the same 40 users to a fresh 10-minute window.
+              </p>
+              <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                Split: 10 male, 10 female, 10 lesbian, 10 gay.
               </p>
             </div>
             <span
@@ -126,7 +129,7 @@ function AdminPage() {
               disabled={isDeploying}
               className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[var(--color-rose)] px-4 text-sm font-semibold text-white disabled:opacity-60"
             >
-              {isDeploying ? "Deploying..." : "Deploy 10 Dummy Users"}
+              {isDeploying ? "Deploying..." : "Deploy 40 Dummy Users"}
             </button>
 
             {canShowModalTrigger && (
@@ -189,7 +192,7 @@ function AdminPage() {
             >
               <div className="flex items-center justify-between gap-3">
                 <h2 id="admin-dummy-users-title" className="text-base font-semibold text-[var(--color-modal-text)]">
-                  10 Dummy Users
+                  40 Dummy Users
                 </h2>
                 <button
                   type="button"
@@ -202,7 +205,7 @@ function AdminPage() {
               </div>
 
               <p className="mt-2 text-xs text-[var(--color-modal-text-muted)]">
-                Number and name of the currently deployed dummy users.
+                Number and name of deployed users (10 male, 10 female, 10 lesbian, 10 gay).
               </p>
 
               <div className="mt-3 max-h-[50vh] space-y-2 overflow-y-auto">

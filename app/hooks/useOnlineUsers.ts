@@ -4,6 +4,8 @@ import { subscribeConvexQuery } from '@/lib/convex'
 export interface OnlineUser {
   _id: string
   username: string
+  gender?: 'male' | 'female' | 'gay' | 'lesbian'
+  avatarId?: string
   isOnline: boolean
   lastSeen: number
 }

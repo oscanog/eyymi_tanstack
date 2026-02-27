@@ -8,7 +8,7 @@ import {
   Mic,
   X,
 } from "lucide-react";
-import { copyCarouselAvatars } from "../../data/copy-carousel";
+import { useOnlineUsers } from "@/hooks/useOnlineUsers";
 import {
   COPY_CAROUSEL_ROTATE_MS,
   COPY_CAROUSEL_TRANSITION_MS,
@@ -17,6 +17,8 @@ import {
   getHoldProgress,
   getWrappedIndex,
 } from "../lib/copy-carousel";
+import { buildCopyCarouselUsers } from "../lib/copy-online-users";
+import { storage } from "@/lib/storage";
 
 export const Route = createFileRoute("/copy")({
   component: CopyMatchPage,
@@ -37,11 +39,15 @@ const navItems: CopyNavItem[] = [
 ];
 
 function CopyMatchPage() {
+  const { users: onlineUsers, isLoading: isOnlineUsersLoading, error: onlineUsersError } = useOnlineUsers(true);
+  const currentUserId = storage.getUserId();
+  const currentUsername = storage.getUsername();
+  const carouselUsers = buildCopyCarouselUsers(onlineUsers, currentUserId, currentUsername);
   const [centerIndex, setCenterIndex] = useState(0);
   const [isPressing, setIsPressing] = useState(false);
   const [isMatchedModalOpen, setIsMatchedModalOpen] = useState(false);
   const [holdProgress, setHoldProgress] = useState(0);
-  const avatarCount = copyCarouselAvatars.length;
+  const avatarCount = carouselUsers.length;
   const holdStartAtRef = useRef<number | null>(null);
   const holdRafIdRef = useRef<number | null>(null);
   const holdCompletedRef = useRef(false);
@@ -118,6 +124,21 @@ function CopyMatchPage() {
     setIsPressing(false);
     setIsMatchedModalOpen(false);
   }, [stopHoldAnimation]);
+
+  useEffect(() => {
+    setCenterIndex((prev) => (avatarCount <= 0 ? 0 : prev % avatarCount));
+  }, [avatarCount]);
+
+  useEffect(() => {
+    if (avatarCount > 0) return;
+
+    holdStartAtRef.current = null;
+    holdCompletedRef.current = false;
+    stopHoldAnimation();
+    setHoldProgress(0);
+    setIsPressing(false);
+    setIsMatchedModalOpen(false);
+  }, [avatarCount, stopHoldAnimation]);
 
   useEffect(() => {
     if (avatarCount <= 1 || isCarouselPaused) return;
@@ -208,18 +229,26 @@ function CopyMatchPage() {
               </h2>
 
               <p className="mb-12 text-center text-sm text-[var(--color-text-secondary)]">
-                Queuing number{" "}
-                <span className="font-semibold text-[var(--color-rose-light)]">36</span>, Wait about{" "}
-                <span className="font-semibold text-[var(--color-text-primary)]">3</span> minute(s)
+                {avatarCount > 0 ? (
+                  <>
+                    Online now{" "}
+                    <span className="font-semibold text-[var(--color-rose-light)]">{avatarCount}</span>, Hold to start a
+                    quick match
+                  </>
+                ) : isOnlineUsersLoading ? (
+                  "Loading online users..."
+                ) : (
+                  "No other online users available right now."
+                )}
               </p>
 
               <div className="relative mb-12 flex h-40 w-full max-w-sm items-center justify-center">
-                {copyCarouselAvatars.map((avatar, index) => {
+                {carouselUsers.map((user, index) => {
                   const visual = getCopyCarouselVisualState(index, centerIndex, avatarCount);
 
                   return (
                     <div
-                      key={avatar.id}
+                      key={user._id}
                       className="copy-match-carousel-item absolute"
                       aria-hidden={!visual.isVisible}
                       style={{
@@ -274,14 +303,14 @@ function CopyMatchPage() {
                             visual.isCenter ? "copy-match-anim-center-shell" : ""
                           }`}
                           style={{
-                            background: avatar.gradient,
+                            background: user.avatar.gradient,
                             animation: visual.isCenter
                               ? "copy-match-center-avatar-pulse 2s ease-in-out infinite"
                               : undefined,
                           }}
                         >
                           <span className="text-5xl" style={{ filter: "none" }}>
-                            {avatar.emoji}
+                            {user.avatar.emoji}
                           </span>
                         </div>
                       </div>
@@ -294,7 +323,7 @@ function CopyMatchPage() {
                 type="button"
                 aria-label="Press and hold to match"
                 aria-pressed={isPressing}
-                disabled={isMatchedModalOpen}
+                disabled={isMatchedModalOpen || avatarCount === 0}
                 onPointerDown={handlePressStart}
                 onPointerUp={handlePressEnd}
                 onPointerCancel={handlePressEnd}
@@ -310,8 +339,13 @@ function CopyMatchPage() {
               </button>
 
               <p className="mt-6 text-sm text-[rgba(45,212,191,0.6)]">
-                Today you left{" "}
-                <span className="font-semibold text-[var(--color-rose-light)]">10</span> match times
+                {onlineUsersError ? (
+                  <span className="text-[var(--color-error)]">Online users unavailable. Please retry shortly.</span>
+                ) : (
+                  <>
+                    Today you left <span className="font-semibold text-[var(--color-rose-light)]">10</span> match times
+                  </>
+                )}
               </p>
             </div>
           </div>

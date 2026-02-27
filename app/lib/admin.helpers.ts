@@ -23,7 +23,7 @@ export function isLocalAppEnv(appEnv: string | undefined): boolean {
 }
 
 export function shouldShowDummyUsersModalTrigger(status: DummyUsersStatus | null | undefined): boolean {
-  return Boolean(status?.isActive && status.users.length === 10)
+  return Boolean(status?.isActive && status.users.length === 40)
 }
 
 export function toNumberedDummyUsers(users: DummyStatusUser[]): NumberedDummyUser[] {
