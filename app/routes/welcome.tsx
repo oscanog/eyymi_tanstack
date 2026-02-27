@@ -1,7 +1,10 @@
 import { Navigate, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { otpAuthStorage } from "@/lib/otpAuth";
 import { storage } from "@/lib/storage";
 import { AppBottomNav } from "@/components/navigation/AppBottomNav";
+import { OnlineUsersDrawer } from "@/components/sidebar/OnlineUsersDrawer";
+import { useOnlineUsers } from "@/hooks/useOnlineUsers";
 import {
   CommunityAvatarIcon,
   FilterSlidersIcon,
@@ -22,8 +25,15 @@ export const Route = createFileRoute("/welcome")({
 
 function WelcomePlaceholderPage() {
   const navigate = useNavigate();
+  const [isUsersDrawerOpen, setIsUsersDrawerOpen] = useState(false);
   const username = storage.getUsername();
+  const userId = storage.getUserId();
   const hasOtpAuth = otpAuthStorage.hasValidSession();
+  const {
+    users: onlineUsers,
+    isLoading: isOnlineUsersLoading,
+    error: onlineUsersError,
+  } = useOnlineUsers(isUsersDrawerOpen);
 
   if (!hasOtpAuth) {
     return <Navigate to="/signin" />;
@@ -34,12 +44,30 @@ function WelcomePlaceholderPage() {
   return (
     <div className="min-h-screen bg-[var(--color-navy-bg)] text-[var(--color-text-primary)]">
       <div className="mx-auto flex min-h-screen w-full max-w-[430px] flex-col bg-[var(--color-navy-bg)]">
+        <OnlineUsersDrawer
+          isOpen={isUsersDrawerOpen}
+          users={onlineUsers}
+          currentUserId={userId}
+          currentUsername={username}
+          isLoading={isOnlineUsersLoading}
+          error={onlineUsersError?.message ?? null}
+          onClose={() => setIsUsersDrawerOpen(false)}
+          variant="welcome"
+        />
+
         <header className="safe-area-inset pt-4 pb-3">
           <div className="flex items-center justify-between">
             <button
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-drawer-item-bg)] text-[var(--color-text-primary)]"
-              aria-label="Filters (placeholder)"
+              onClick={() => setIsUsersDrawerOpen(true)}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border transition duration-200 hover:brightness-110 active:scale-95"
+              style={{
+                borderColor: "var(--color-drawer-polish-trigger-border)",
+                background: "var(--color-drawer-polish-trigger-bg)",
+                color: "var(--color-drawer-polish-trigger-icon)",
+                boxShadow: "var(--color-drawer-polish-trigger-shadow)",
+              }}
+              aria-label="Open online users sidebar"
             >
               <FilterSlidersIcon className="h-5 w-5" />
             </button>

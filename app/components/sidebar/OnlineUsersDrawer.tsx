@@ -12,6 +12,7 @@ interface OnlineUsersDrawerProps {
   error: string | null
   onUserClick?: (user: OnlineUser) => void
   onClose: () => void
+  variant?: 'default' | 'welcome'
 }
 
 function formatLastSeen(lastSeen: number): string {
@@ -33,8 +34,10 @@ export function OnlineUsersDrawer({
   error,
   onUserClick,
   onClose,
+  variant = 'default',
 }: OnlineUsersDrawerProps) {
   const openedAtRef = useRef(0)
+  const isWelcomeVariant = variant === 'welcome'
 
   useEffect(() => {
     if (!isOpen) return
@@ -100,24 +103,35 @@ export function OnlineUsersDrawer({
 
       <aside
         aria-label="Online users"
+        data-testid="online-users-drawer"
+        data-variant={variant}
         className={`fixed top-0 left-0 z-[960] h-full w-[82vw] max-w-[360px] transform-gpu transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
         style={{
           backgroundColor: 'var(--color-drawer-surface)',
           borderRight: '1px solid var(--color-drawer-border)',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.35)',
+          boxShadow: isWelcomeVariant
+            ? 'var(--color-drawer-polish-surface-shadow)'
+            : '0 20px 60px rgba(0, 0, 0, 0.35)',
         }}
       >
         <div className="safe-area-inset h-full flex flex-col px-4 py-5">
-          <div className="mt-2 flex items-center justify-between">
+          <div className={`flex items-center justify-between ${isWelcomeVariant ? 'mt-1' : 'mt-2'}`}>
             <div className="flex items-center gap-3">
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: 'var(--color-drawer-accent-soft)' }}
+                className={`flex items-center justify-center ${isWelcomeVariant ? 'w-11 h-11 rounded-2xl' : 'w-10 h-10 rounded-xl'}`}
+                style={{
+                  backgroundColor: 'var(--color-drawer-accent-soft)',
+                  border: isWelcomeVariant ? '1px solid var(--color-drawer-polish-chip-border)' : undefined,
+                  boxShadow: isWelcomeVariant ? 'var(--color-drawer-polish-chip-shadow)' : undefined,
+                }}
               >
-                <Users className="w-5 h-5" style={{ color: 'var(--color-rose)' }} />
+                <Users className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
               </div>
-              <div>
-                <p className="text-sm font-semibold" style={{ color: 'var(--color-drawer-text)' }}>
+              <div className="min-w-0">
+                <p
+                  className={`${isWelcomeVariant ? 'text-base' : 'text-sm'} font-semibold`}
+                  style={{ color: 'var(--color-drawer-text)' }}
+                >
                   Online users
                 </p>
                 <p className="text-xs" style={{ color: 'var(--color-drawer-text-muted)' }}>
@@ -125,13 +139,27 @@ export function OnlineUsersDrawer({
                 </p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="w-10 h-10 rounded-xl flex items-center justify-center transition-colors hover:bg-black/10"
-              aria-label="Close online users sidebar"
-            >
-              <X className="w-5 h-5" style={{ color: 'var(--color-drawer-text)' }} />
-            </button>
+            <div className="flex items-center gap-2">
+              {isWelcomeVariant && (
+                <span
+                  className="rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide"
+                  style={{
+                    color: 'var(--color-primary)',
+                    backgroundColor: 'var(--color-drawer-polish-chip-bg)',
+                    border: '1px solid var(--color-drawer-polish-chip-border)',
+                  }}
+                >
+                  {sortedUsers.length} online
+                </span>
+              )}
+              <button
+                onClick={onClose}
+                className="w-10 h-10 rounded-xl flex items-center justify-center transition-colors hover:bg-black/10"
+                aria-label="Close online users sidebar"
+              >
+                <X className="w-5 h-5" style={{ color: 'var(--color-drawer-text)' }} />
+              </button>
+            </div>
           </div>
 
           <div className="mt-5 flex-1 overflow-y-auto scrollbar-hide">
@@ -201,7 +229,7 @@ export function OnlineUsersDrawer({
                             <span
                               className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
                               style={{
-                                color: 'var(--color-rose)',
+                                color: isWelcomeVariant ? 'var(--color-primary)' : 'var(--color-rose)',
                                 backgroundColor: 'var(--color-drawer-accent-soft)',
                               }}
                             >
@@ -213,7 +241,10 @@ export function OnlineUsersDrawer({
                           Last seen {formatLastSeen(user.lastSeen)}
                         </p>
                       </div>
-                      <Circle className="w-2.5 h-2.5 fill-current" style={{ color: 'var(--color-success)' }} />
+                      <Circle
+                        className="w-2.5 h-2.5 fill-current"
+                        style={{ color: isWelcomeVariant ? 'var(--color-primary)' : 'var(--color-success)' }}
+                      />
                     </div>
                   )
 
@@ -221,12 +252,18 @@ export function OnlineUsersDrawer({
                     return (
                       <button
                         key={user._id}
+                        data-testid={`online-user-row-button-${user._id}`}
                         onClick={() => onUserClick?.(user)}
-                        className={`w-full text-left rounded-2xl px-3 py-3 transition-all duration-300 hover:scale-[1.01] ${isOpen ? 'translate-x-0 opacity-100' : '-translate-x-3 opacity-0'}`}
+                        className={`w-full text-left rounded-2xl px-3 py-3 transition-all duration-300 hover:scale-[1.01] ${isWelcomeVariant ? 'hover:-translate-y-0.5' : ''} ${isOpen ? 'translate-x-0 opacity-100' : '-translate-x-3 opacity-0'}`}
                         style={{
                           transitionDelay: `${60 + index * 30}ms`,
-                          backgroundColor: 'var(--color-drawer-item-bg)',
-                          border: '1px solid var(--color-drawer-border)',
+                          backgroundColor: isWelcomeVariant
+                            ? 'var(--color-drawer-polish-row-bg)'
+                            : 'var(--color-drawer-item-bg)',
+                          border: isWelcomeVariant
+                            ? '1px solid var(--color-drawer-polish-row-border)'
+                            : '1px solid var(--color-drawer-border)',
+                          boxShadow: isWelcomeVariant ? 'var(--color-drawer-polish-row-shadow)' : undefined,
                         }}
                       >
                         {rowContent}
@@ -237,11 +274,23 @@ export function OnlineUsersDrawer({
                   return (
                     <div
                       key={user._id}
+                      data-testid={`online-user-row-static-${user._id}`}
                       className={`rounded-2xl px-3 py-3 transition-all duration-300 ${isOpen ? 'translate-x-0 opacity-100' : '-translate-x-3 opacity-0'}`}
                       style={{
                         transitionDelay: `${60 + index * 30}ms`,
-                        backgroundColor: isSelf ? 'var(--color-drawer-self-bg)' : 'var(--color-drawer-item-bg)',
-                        border: `1px solid ${isSelf ? 'var(--color-drawer-self-border)' : 'var(--color-drawer-border)'}`,
+                        backgroundColor: isSelf
+                          ? 'var(--color-drawer-self-bg)'
+                          : isWelcomeVariant
+                            ? 'var(--color-drawer-polish-row-bg)'
+                            : 'var(--color-drawer-item-bg)',
+                        border: `1px solid ${
+                          isSelf
+                            ? 'var(--color-drawer-self-border)'
+                            : isWelcomeVariant
+                              ? 'var(--color-drawer-polish-row-border)'
+                              : 'var(--color-drawer-border)'
+                        }`,
+                        boxShadow: isWelcomeVariant ? 'var(--color-drawer-polish-row-shadow)' : undefined,
                       }}
                     >
                       {rowContent}
