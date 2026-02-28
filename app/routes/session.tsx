@@ -6,19 +6,13 @@ import {
   InviteSendConfirmDialog,
   OutgoingPendingDialog,
 } from '@/components/modals/SessionInviteDialogs'
-import { IdentityRecoveryDialog } from '@/components/modals/IdentityRecoveryDialog'
 import { OnlineUsersDrawer } from '@/components/sidebar/OnlineUsersDrawer'
 import type { OnlineUser } from '@/hooks'
 import { useOnlineUsers } from '@/hooks/useOnlineUsers'
 import { useSessionInvites } from '@/hooks/useSessionInvites'
-import { convexMutation, convexQuery } from '@/lib/convex'
+import { convexQuery } from '@/lib/convex'
 import { otpAuthStorage } from '@/lib/otpAuth'
 import { storage } from '@/lib/storage'
-import {
-  parseSuggestedUsername,
-  sanitizeUsernameInput,
-  USERNAME_MIN_LENGTH,
-} from '@/lib/username'
 
 export const Route = createFileRoute('/session')({
   component: SessionLayout,
@@ -32,11 +26,6 @@ type AuthStatus = 'checking' | 'authenticated' | 'guest'
 interface AuthenticatedUser {
   _id: string
   username: string
-}
-
-interface IdentityRecoveryState {
-  deviceId: string
-  lastUsername: string
 }
 
 function formatLocationLabel(payload: any): string | null {
@@ -69,12 +58,9 @@ function SessionLayout() {
   const [authStatus, setAuthStatus] = useState<AuthStatus>('checking')
   const [isUsersDrawerOpen, setIsUsersDrawerOpen] = useState(false)
   const [selectedInviteTarget, setSelectedInviteTarget] = useState<OnlineUser | null>(null)
-  const [identityRecovery, setIdentityRecovery] = useState<IdentityRecoveryState | null>(null)
-  const [identityRecoveryError, setIdentityRecoveryError] = useState<string | null>(null)
-  const [isRecoveringIdentity, setIsRecoveringIdentity] = useState(false)
   const [hostLocationLabel, setHostLocationLabel] = useState('Locating host...')
   const { users: onlineUsers, isLoading: isOnlineUsersLoading, error: onlineUsersError } = useOnlineUsers(isUsersDrawerOpen)
-  const userId = identityRecovery ? null : storage.getUserId()
+  const userId = storage.getUserId()
   const username = storage.getUsername()
   const shouldShowHostLocation = pathname === '/session/create'
   const hasOtpAuth = otpAuthStorage.hasValidSession()
@@ -93,26 +79,17 @@ function SessionLayout() {
   } = useSessionInvites(userId)
 
   useEffect(() => {
-    let isCancelled = false
-
     const resolveAuthState = async () => {
       const postAuthIntent = otpAuthStorage.consumePostAuthRouteIntent()
       const auth = storage.getAuth()
-      if (!auth.deviceId || !auth.userId || !auth.username) {
+      if (!auth.deviceId || !storage.getRecoveryUsername()) {
         if (postAuthIntent === 'signin' && otpAuthStorage.hasValidSession()) {
-          if (isCancelled) return
-          setIdentityRecovery(null)
-          setIdentityRecoveryError(null)
           setAuthStatus('authenticated')
           return
         }
-        if (isCancelled) return
-        setIdentityRecovery(null)
         setAuthStatus('guest')
         return
       }
-
-      const rememberedUsername = storage.getLastKnownUsername() ?? auth.username
 
       try {
         const existingUser = await convexQuery<AuthenticatedUser | null>(
@@ -121,44 +98,26 @@ function SessionLayout() {
           { maxRetries: 1, baseDelay: 250, maxDelay: 1000 },
         )
 
-        if (isCancelled) return
-
         if (existingUser) {
           storage.setAuthData(auth.deviceId, existingUser.username, existingUser._id)
-          setIdentityRecovery(null)
-          setIdentityRecoveryError(null)
           setAuthStatus('authenticated')
           return
         }
 
         if (postAuthIntent === 'signin' && otpAuthStorage.hasValidSession()) {
           storage.clear()
-          setIdentityRecovery(null)
-          setIdentityRecoveryError(null)
           setAuthStatus('authenticated')
           return
         }
 
-        setIdentityRecovery({
-          deviceId: auth.deviceId,
-          lastUsername: rememberedUsername,
-        })
-        setIdentityRecoveryError(null)
         setAuthStatus('authenticated')
       } catch {
-        if (isCancelled) return
         // Keep local auth usable when network validation is temporarily unavailable.
-        setIdentityRecovery(null)
-        setIdentityRecoveryError(null)
         setAuthStatus('authenticated')
       }
     }
 
     void resolveAuthState()
-
-    return () => {
-      isCancelled = true
-    }
   }, [])
 
   useEffect(() => {
@@ -280,64 +239,6 @@ function SessionLayout() {
     }
   }, [cancelOutgoingInvite, outgoingInvite])
 
-  const handleUseLastUsername = useCallback(async () => {
-    if (!identityRecovery) {
-      return
-    }
-
-    const normalizedUsername = sanitizeUsernameInput(identityRecovery.lastUsername)
-    if (normalizedUsername.length < USERNAME_MIN_LENGTH) {
-      setIdentityRecoveryError('No valid previous username was found. Please choose another username.')
-      return
-    }
-
-    setIsRecoveringIdentity(true)
-    setIdentityRecoveryError(null)
-
-    try {
-      const restoredUser = await convexMutation<AuthenticatedUser>(
-        'users:upsert',
-        {
-          deviceId: identityRecovery.deviceId,
-          username: normalizedUsername,
-        },
-        { maxRetries: 1, baseDelay: 250, maxDelay: 1000 },
-      )
-
-      storage.setAuthData(identityRecovery.deviceId, restoredUser.username, restoredUser._id)
-      setIdentityRecovery(null)
-      setIdentityRecoveryError(null)
-      setAuthStatus('authenticated')
-    } catch (err) {
-      if (err instanceof Error) {
-        const suggestion = parseSuggestedUsername(err.message)
-        if (suggestion) {
-          setIdentityRecoveryError(
-            `"${normalizedUsername}" is active right now. Please choose another username.`,
-          )
-        } else {
-          setIdentityRecoveryError(err.message)
-        }
-      } else {
-        setIdentityRecoveryError('Failed to restore your profile. Please choose another username.')
-      }
-    } finally {
-      setIsRecoveringIdentity(false)
-    }
-  }, [identityRecovery])
-
-  const handleChooseOtherUsername = useCallback(() => {
-    if (isRecoveringIdentity) {
-      return
-    }
-
-    storage.clear()
-    setIdentityRecovery(null)
-    setIdentityRecoveryError(null)
-    setAuthStatus('guest')
-    navigate({ to: '/' })
-  }, [isRecoveringIdentity, navigate])
-
   if (!hasOtpAuth) {
     return <Navigate to="/signin" />
   }
@@ -358,15 +259,6 @@ function SessionLayout() {
 
   return (
     <div className="min-h-screen bg-[var(--color-navy-bg)]">
-      <IdentityRecoveryDialog
-        isOpen={Boolean(identityRecovery)}
-        lastUsername={identityRecovery?.lastUsername ?? null}
-        isLoading={isRecoveringIdentity}
-        error={identityRecoveryError}
-        onUseLastUsername={() => { void handleUseLastUsername() }}
-        onChooseOtherUsername={handleChooseOtherUsername}
-      />
-
       <InviteSendConfirmDialog
         isOpen={Boolean(selectedInviteTarget)}
         targetName={selectedInviteTarget?.username ?? 'this user'}
@@ -426,7 +318,7 @@ function SessionLayout() {
       </div>
 
       {/* Child routes render here */}
-      {!identityRecovery && <Outlet />}
+      <Outlet />
     </div>
   )
 }

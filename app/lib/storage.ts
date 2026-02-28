@@ -67,6 +67,10 @@ export const storage = {
     }
   },
 
+  getRecoveryUsername(): string | null {
+    return this.getUsername() ?? this.getLastKnownUsername()
+  },
+
   // User ID
   getUserId(): string | null {
     if (!isBrowser()) return null

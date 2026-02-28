@@ -1,14 +1,19 @@
 import { useEffect } from 'react'
 import { convexMutation } from '@/lib/convex'
+import { otpAuthStorage } from '@/lib/otpAuth'
 import { storage } from '@/lib/storage'
 
 const HEARTBEAT_INTERVAL_MS = 30000
 
-export function usePresenceHeartbeat() {
+interface UsePresenceHeartbeatOptions {
+  restorePresence?: () => Promise<boolean>
+}
+
+export function usePresenceHeartbeat({ restorePresence }: UsePresenceHeartbeatOptions = {}) {
   const deviceId = storage.getDeviceId()
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !deviceId) return
+    if (typeof window === 'undefined' || !deviceId || !otpAuthStorage.hasValidSession()) return
 
     let isDisposed = false
 
@@ -16,35 +21,26 @@ export function usePresenceHeartbeat() {
       if (isDisposed) return
 
       try {
-        await convexMutation(
+        const userId = await convexMutation<string | null>(
           'users:heartbeat',
           { deviceId },
           { maxRetries: 1, baseDelay: 250, maxDelay: 1000 }
         )
+        if (!userId) {
+          await restorePresence?.()
+        }
       } catch {
         // Keep this silent; next tick retries automatically.
       }
     }
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        void sendHeartbeat()
-      }
-    }
-
-    void sendHeartbeat()
     const intervalId = window.setInterval(() => {
       void sendHeartbeat()
     }, HEARTBEAT_INTERVAL_MS)
 
-    window.addEventListener('focus', sendHeartbeat)
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-
     return () => {
       isDisposed = true
       window.clearInterval(intervalId)
-      window.removeEventListener('focus', sendHeartbeat)
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [deviceId])
+  }, [deviceId, restorePresence])
 }

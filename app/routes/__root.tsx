@@ -3,7 +3,9 @@ import { HeadContent, Link, Scripts, createRootRoute, Outlet } from '@tanstack/r
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
+import { IdentityRecoveryDialog } from '../components/modals/IdentityRecoveryDialog'
 import { PWAMeta } from '../components/PWAMeta'
+import { usePresenceLifecycle } from '../hooks/usePresenceLifecycle'
 import { usePresenceHeartbeat } from '../hooks/usePresenceHeartbeat'
 import { useServiceWorker } from '../hooks/useServiceWorker'
 import appCss from '../styles/styles.css?url'
@@ -40,7 +42,15 @@ export const Route = createRootRoute({
 function RootDocument() {
   // Register service worker on mount
   const { register } = useServiceWorker()
-  usePresenceHeartbeat()
+  const {
+    isRestoringPresence,
+    recoveryState,
+    recoveryError,
+    restorePresence,
+    retryRecovery,
+    abandonRecovery,
+  } = usePresenceLifecycle()
+  usePresenceHeartbeat({ restorePresence })
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
@@ -68,6 +78,14 @@ function RootDocument() {
       </head>
       <body className="bg-navy-900 text-white antialiased">
         <div className="max-w-[430px] mx-auto min-h-screen bg-[var(--color-navy-bg)]">
+          <IdentityRecoveryDialog
+            isOpen={Boolean(recoveryState)}
+            lastUsername={recoveryState?.lastUsername ?? null}
+            isLoading={isRestoringPresence}
+            error={recoveryError}
+            onUseLastUsername={() => { void retryRecovery() }}
+            onChooseOtherUsername={abandonRecovery}
+          />
           <Outlet />
         </div>
         {import.meta.env.DEV ? (
