@@ -3,12 +3,10 @@ export type SoulGameUiStateKey =
   | "queueing"
   | "pressing"
   | "matched"
-  | "session"
   | "error";
 
 export interface SoulGameTimingConfig {
   minHoldMs: number;
-  minOverlapMs: number;
   maxPressDurationMs: number;
   queueHeartbeatMs: number;
   queueStaleAfterMs: number;
@@ -16,7 +14,6 @@ export interface SoulGameTimingConfig {
   matchPollMs: number;
   candidateRotateMs: number;
   successIntroMs: number;
-  sessionDurationMs: number;
 }
 
 export interface SoulGameInlineStatusCopy {
@@ -25,16 +22,14 @@ export interface SoulGameInlineStatusCopy {
 }
 
 export const soulGameTimingConfig: SoulGameTimingConfig = {
-  minHoldMs: 2000,
-  minOverlapMs: 350,
+  minHoldMs: 1500,
   maxPressDurationMs: 6000,
   queueHeartbeatMs: 15000,
   queueStaleAfterMs: 45000,
   queuePollMs: 2500,
   matchPollMs: 1000,
-  candidateRotateMs: 5000,
-  successIntroMs: 1000,
-  sessionDurationMs: 2 * 60 * 1000,
+  candidateRotateMs: 3000,
+  successIntroMs: 0,
 };
 
 export const soulGameUiStateOrder: SoulGameUiStateKey[] = [
@@ -42,30 +37,25 @@ export const soulGameUiStateOrder: SoulGameUiStateKey[] = [
   "queueing",
   "pressing",
   "matched",
-  "session",
   "error",
 ];
 
 export const soulGameInlineStatusCopy: Record<SoulGameUiStateKey, SoulGameInlineStatusCopy> = {
   idle: {
     title: "Ready to match",
-    description: "Press and hold when you are ready. We will look for an overlapping press.",
+    description: "Hold 1.5s while this avatar is in center.",
   },
   queueing: {
     title: "Looking for someone",
-    description: "You are in the Soul Game queue. Keep this screen open while we search.",
+    description: "You are in the Soul Game queue. Every center avatar gets one 3-second chance.",
   },
   pressing: {
     title: "Hold steady",
-    description: "Keep holding the circle. A match happens when your press overlaps another player.",
+    description: "Your ring fills clockwise. If they press you back, their ring appears counter-clockwise.",
   },
   matched: {
     title: "Match found",
-    description: "A compatible timing overlap was found. Starting your 2-minute conversation.",
-  },
-  session: {
-    title: "2-minute session live",
-    description: "Your Soul Game conversation is active. Stay present and enjoy the moment.",
+    description: "eyymi match happened.",
   },
   error: {
     title: "Could not continue",

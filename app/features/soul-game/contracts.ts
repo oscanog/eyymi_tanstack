@@ -1,19 +1,15 @@
 import { soulGameInlineStatusCopy, type SoulGameUiStateKey } from "../../../data";
 
 export type SoulGameQueueStatus = "inactive" | "queued" | "matching" | "matched";
-export type SoulGameMatchStatus =
-  | "pending_intro"
-  | "active_2min"
-  | "ended"
-  | "cancelled";
-export type SoulGamePressEventStatus = "pending" | "matched" | "expired";
+export type SoulGameMatchStatus = "pending_intro" | "ended" | "cancelled";
+export type SoulGamePressEventStatus = "holding" | "ready" | "matched" | "expired" | "cancelled";
 
 export interface SoulGameQueuePresence {
   queueEntryId: string;
-  authUserId?: string;
-  profileUserId?: string;
-  username?: string;
-  avatarId?: string;
+  authUserId?: string | null;
+  profileUserId?: string | null;
+  username?: string | null;
+  avatarId?: string | null;
   isActive: boolean;
   joinedAt: number;
   lastHeartbeatAt: number;
@@ -23,57 +19,64 @@ export interface SoulGameQueueSnapshot {
   self: SoulGameQueuePresence | null;
   onlineCandidates: Array<{
     queueEntryId: string;
-    username?: string;
-    avatarId?: string;
+    username?: string | null;
+    avatarId?: string | null;
     joinedAt: number;
     lastHeartbeatAt: number;
   }>;
   queueCount: number;
   estimatedWaitMs?: number;
   status: SoulGameQueueStatus;
-  serverNow: number;
 }
 
-export interface SoulGamePressInterval {
-  pressEventId: string;
+export interface SoulGameFocusWindow {
+  id: string;
+  startsAt: number;
+  endsAt: number;
+  durationMs: number;
+}
+
+export interface SoulGameFocusTarget {
   queueEntryId: string;
-  pressStartedAt: number;
-  pressEndedAt?: number;
-  durationMs?: number;
-  status: SoulGamePressEventStatus;
+  username?: string | null;
+  avatarId?: string | null;
 }
 
-export interface SoulGameMatchSession {
-  sessionId: string;
+export interface SoulGameHoldState {
+  pressEventId: string;
+  progressMs: number;
+  progressRatio: number;
+  isReady: boolean;
+}
+
+export interface SoulGamePartnerHoldState {
+  queueEntryId: string;
+  progressMs: number;
+  progressRatio: number;
+  isReady: boolean;
+  isVisible: boolean;
+}
+
+export interface SoulGameDemoMatch {
   matchId: string;
-  status: SoulGameMatchStatus;
+  status: "pending_intro" | "ended";
   matchedUser: {
-    username?: string;
-    avatarId?: string;
+    queueEntryId?: string | null;
+    username?: string | null;
+    avatarId?: string | null;
   };
-  createdAt: number;
-  conversationEndsAt: number;
-}
-
-export interface SoulGameMatchSnapshot {
-  matchId: string;
-  userAQueueEntryId: string;
-  userBQueueEntryId: string;
-  matchWindowStart: number;
-  matchWindowEnd: number;
-  overlapMs: number;
-  status: SoulGameMatchStatus;
-  conversationEndsAt?: number;
-  createdAt: number;
+  windowId: string;
 }
 
 export interface SoulGameViewModel {
   uiState: SoulGameUiStateKey;
   isPressing: boolean;
   queueSnapshot: SoulGameQueueSnapshot | null;
-  activePress: SoulGamePressInterval | null;
-  matchSnapshot: SoulGameMatchSnapshot | null;
-  session: SoulGameMatchSession | null;
+  focusWindow: SoulGameFocusWindow | null;
+  focusTarget: SoulGameFocusTarget | null;
+  selfHold: SoulGameHoldState | null;
+  partnerReciprocalHold: SoulGamePartnerHoldState | null;
+  demoMatch: SoulGameDemoMatch | null;
   inlineMessage: {
     title: string;
     description: string;
@@ -98,9 +101,18 @@ export interface SoulGameLeaveQueueArgs {
 
 export interface SoulGamePressStartArgs {
   queueEntryId: string;
+  targetQueueEntryId: string;
+  focusWindowId: string;
 }
 
-export interface SoulGamePressEndArgs {
+export interface SoulGamePressCommitArgs {
+  queueEntryId: string;
+  pressEventId: string;
+  targetQueueEntryId: string;
+  focusWindowId: string;
+}
+
+export interface SoulGamePressCancelArgs {
   queueEntryId: string;
   pressEventId: string;
 }
@@ -111,16 +123,14 @@ export type SoulGameSafeErrorCode =
   | "PRESS_START_FAILED"
   | "PRESS_END_FAILED"
   | "MATCH_SYNC_FAILED"
-  | "SESSION_START_FAILED"
   | "UNKNOWN";
 
 const soulGameSafeErrorMessages: Record<SoulGameSafeErrorCode, string> = {
   QUEUE_JOIN_FAILED: "We could not join the Soul Game queue. Please try again.",
   QUEUE_HEARTBEAT_FAILED: "Connection looks unstable. We are trying to keep your queue status active.",
-  PRESS_START_FAILED: "Your press did not start correctly. Press and hold again.",
-  PRESS_END_FAILED: "Your press could not be submitted. Please try another hold.",
-  MATCH_SYNC_FAILED: "We could not sync your match status yet. Please wait a moment and retry.",
-  SESSION_START_FAILED: "Your match was found, but the session could not start. Please rejoin the queue.",
+  PRESS_START_FAILED: "Your fingerprint hold did not start correctly. Press again while the center avatar is active.",
+  PRESS_END_FAILED: "Your hold could not be completed. Try again on the next center chance.",
+  MATCH_SYNC_FAILED: "We could not sync your Soul Game state yet. Please wait a moment and retry.",
   UNKNOWN: "Something went wrong. Please try again.",
 };
 
@@ -130,7 +140,7 @@ export function getSoulGameInlineMessageForState(
 ): SoulGameViewModel["inlineMessage"] {
   const base = soulGameInlineStatusCopy[uiState];
   const tone =
-    toneOverride ?? (uiState === "matched" || uiState === "session"
+    toneOverride ?? (uiState === "matched"
       ? "success"
       : uiState === "error"
         ? "error"
