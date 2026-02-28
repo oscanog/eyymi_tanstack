@@ -9,6 +9,7 @@ export interface DummyUsersStatus {
   startedAt: number | null
   expiresAt: number | null
   remainingMs: number
+  copyVisibilityEnabled: boolean
   users: DummyStatusUser[]
 }
 

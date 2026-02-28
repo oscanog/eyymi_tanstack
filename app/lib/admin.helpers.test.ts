@@ -20,6 +20,7 @@ describe("admin helpers", () => {
       startedAt: 1,
       expiresAt: 2,
       remainingMs: 1000,
+      copyVisibilityEnabled: true,
       users: Array.from({ length: 40 }, (_, index) => ({
         slot: index + 1,
         userId: `id-${index + 1}`,

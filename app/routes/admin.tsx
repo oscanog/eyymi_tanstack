@@ -19,6 +19,7 @@ const EMPTY_STATUS: DummyUsersStatus = {
   startedAt: null,
   expiresAt: null,
   remainingMs: 0,
+  copyVisibilityEnabled: true,
   users: [],
 }
 
@@ -27,6 +28,9 @@ function AdminPage() {
   const [isDeploying, setIsDeploying] = useState(false)
   const [deployError, setDeployError] = useState<string | null>(null)
   const [deploySuccessMessage, setDeploySuccessMessage] = useState<string | null>(null)
+  const [isUpdatingCopyVisibility, setIsUpdatingCopyVisibility] = useState(false)
+  const [copyVisibilityError, setCopyVisibilityError] = useState<string | null>(null)
+  const [copyVisibilitySuccessMessage, setCopyVisibilitySuccessMessage] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const {
     data: statusData,
@@ -71,6 +75,31 @@ function AdminPage() {
       setDeployError(err instanceof Error ? err.message : "Failed to deploy dummy users")
     } finally {
       setIsDeploying(false)
+    }
+  }
+
+  const handleToggleCopyVisibility = async (enabled: boolean) => {
+    setIsUpdatingCopyVisibility(true)
+    setCopyVisibilityError(null)
+    setCopyVisibilitySuccessMessage(null)
+
+    try {
+      await convexMutation<DummyUsersStatus>(
+        "admin:setCopyDummyVisibility",
+        { enabled },
+        { maxRetries: 1, baseDelay: 250, maxDelay: 1000 },
+      )
+      setCopyVisibilitySuccessMessage(
+        enabled
+          ? "Dummy visibility in /copy is now enabled."
+          : "Dummy visibility in /copy is now disabled.",
+      )
+    } catch (err) {
+      setCopyVisibilityError(
+        err instanceof Error ? err.message : "Failed to update /copy dummy visibility",
+      )
+    } finally {
+      setIsUpdatingCopyVisibility(false)
     }
   }
 
@@ -120,6 +149,41 @@ function AdminPage() {
               : "No active dummy deployment."}
           </div>
 
+          <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-drawer-item-bg)] p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">Show dummies in /copy</p>
+                <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
+                  {status.copyVisibilityEnabled ? "On" : "Off"}
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={status.copyVisibilityEnabled}
+                onClick={() => {
+                  void handleToggleCopyVisibility(!status.copyVisibilityEnabled)
+                }}
+                disabled={isUpdatingCopyVisibility}
+                className="inline-flex min-h-[36px] min-w-[88px] items-center justify-center rounded-full border border-[var(--color-border)] px-3 text-xs font-semibold disabled:opacity-60"
+                style={{
+                  background: status.copyVisibilityEnabled
+                    ? "var(--color-drawer-accent-soft)"
+                    : "var(--color-drawer-item-bg)",
+                  color: status.copyVisibilityEnabled
+                    ? "var(--color-rose-light)"
+                    : "var(--color-text-secondary)",
+                }}
+              >
+                {isUpdatingCopyVisibility
+                  ? "Updating..."
+                  : status.copyVisibilityEnabled
+                    ? "Turn Off"
+                    : "Turn On"}
+              </button>
+            </div>
+          </div>
+
           <div className="mt-4 flex gap-2">
             <button
               type="button"
@@ -153,6 +217,10 @@ function AdminPage() {
           {error && <p className="mt-3 text-xs text-[var(--color-error)]">{error.message}</p>}
           {deployError && <p className="mt-3 text-xs text-[var(--color-error)]">{deployError}</p>}
           {deploySuccessMessage && <p className="mt-3 text-xs text-[var(--color-success)]">{deploySuccessMessage}</p>}
+          {copyVisibilityError && <p className="mt-3 text-xs text-[var(--color-error)]">{copyVisibilityError}</p>}
+          {copyVisibilitySuccessMessage && (
+            <p className="mt-3 text-xs text-[var(--color-success)]">{copyVisibilitySuccessMessage}</p>
+          )}
         </section>
 
         <section className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-navy-surface)] p-4">
