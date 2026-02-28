@@ -11,7 +11,6 @@ export type GenderOption = "male" | "female" | "gay" | "lesbian";
 export interface OnboardingGenderOption {
   value: GenderOption;
   title: string;
-  subtitle: string;
   icon: "male" | "female" | "gay" | "lesbian";
 }
 
@@ -46,25 +45,21 @@ export const onboardingGenderOptions: OnboardingGenderOption[] = [
   {
     value: "male",
     title: "Male",
-    subtitle: "Man looking to connect",
     icon: "male",
   },
   {
     value: "female",
     title: "Female",
-    subtitle: "Woman looking to connect",
     icon: "female",
   },
   {
     value: "gay",
     title: "Gay",
-    subtitle: "Modern same-gender match",
     icon: "gay",
   },
   {
     value: "lesbian",
     title: "Lesbian",
-    subtitle: "Women who match women",
     icon: "lesbian",
   },
 ];
