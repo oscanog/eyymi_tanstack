@@ -62,9 +62,10 @@ export const api = {
     joinQueue: "copyMatch/joinQueue" as const,
     heartbeat: "copyMatch/heartbeat" as const,
     leaveQueue: "copyMatch/leaveQueue" as const,
-    updateTarget: "copyMatch/updateTarget" as const,
     pressStart: "copyMatch/pressStart" as const,
-    pressEnd: "copyMatch/pressEnd" as const,
+    pressCommit: "copyMatch/pressCommit" as const,
+    pressCancel: "copyMatch/pressCancel" as const,
+    closeMatch: "copyMatch/closeMatch" as const,
     getClientState: "copyMatch/getClientState" as const,
   },
 };
