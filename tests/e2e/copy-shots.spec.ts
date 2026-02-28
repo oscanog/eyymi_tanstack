@@ -168,6 +168,10 @@ async function waitForReciprocalRing(page: Page) {
   await expect(page.getByTestId("copy-partner-ring")).toHaveAttribute("data-visible", "true");
 }
 
+async function readHeadAngle(page: Page, testId: string) {
+  return Number((await page.getByTestId(testId).getAttribute("data-head-angle")) ?? "0");
+}
+
 async function saveShot(page: Page, outputDir: string, filename: string) {
   await page.screenshot({
     path: path.join(outputDir, filename),
@@ -218,6 +222,19 @@ test.describe.serial("/copy screenshot diagnostics", () => {
       await expect(session1.page.getByTestId("copy-partner-ring")).toHaveAttribute("data-direction", "counter-clockwise");
       await expect(session2.page.getByTestId("copy-self-ring")).toHaveAttribute("data-direction", "clockwise");
       await expect(session2.page.getByTestId("copy-partner-ring")).toHaveAttribute("data-direction", "counter-clockwise");
+      await expect(session1.page.getByTestId("copy-self-ring")).toHaveAttribute("data-ready", "false");
+      await expect(session1.page.getByTestId("copy-partner-ring")).toHaveAttribute("data-ready", "false");
+
+      const [selfAngle1, partnerAngle1, selfAngle2, partnerAngle2] = await Promise.all([
+        readHeadAngle(session1.page, "copy-self-ring"),
+        readHeadAngle(session1.page, "copy-partner-ring"),
+        readHeadAngle(session2.page, "copy-self-ring"),
+        readHeadAngle(session2.page, "copy-partner-ring"),
+      ]);
+      expect(selfAngle1).toBeGreaterThan(-90);
+      expect(selfAngle2).toBeGreaterThan(-90);
+      expect(partnerAngle1).toBeLessThan(-90);
+      expect(partnerAngle2).toBeLessThan(-90);
 
       const plusOneState = await waitForSharedWindowWithBudget(session1.page, session2.page, 200);
       expect(plusOneState.windowId).toBe(baselineWindow.windowId);

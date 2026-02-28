@@ -3,7 +3,14 @@ import { useEffect, useMemo, useRef, useState, type ComponentType } from "react"
 import { Fingerprint, Heart, SlidersHorizontal, X } from "lucide-react";
 import { convexMutation } from "@/lib/convex";
 import { useConvexQuery, useConvexSubscription } from "@/hooks/useConvexQuery";
-import { shouldShowNoCandidatesDecision } from "@/lib/copy-match.helpers";
+import {
+  clampProgressRatio,
+  describeRingArc,
+  getRingHeadAngle,
+  getRingPoint,
+  shouldShowNoCandidatesDecision,
+  type RingDirection,
+} from "@/lib/copy-match.helpers";
 import { resolveCopyCarouselAvatar } from "@/lib/copy-online-users";
 import { storage } from "@/lib/storage";
 import {
@@ -143,51 +150,91 @@ function RingTrack({
   testId,
   progress,
   color,
-  inset,
+  radius,
+  strokeWidth,
   direction,
   visible,
+  isReady,
 }: {
   testId: string;
   progress: number;
   color: string;
-  inset: number;
-  direction: "clockwise" | "counter-clockwise";
+  radius: number;
+  strokeWidth: number;
+  direction: RingDirection;
   visible: boolean;
+  isReady: boolean;
 }) {
-  const clamped = Math.max(0, Math.min(1, progress));
-  const angle = clamped * 360;
+  const clamped = clampProgressRatio(progress);
+  const headAngle = getRingHeadAngle(clamped, direction);
+  const head = getRingPoint(radius, headAngle);
+  const arcPath = describeRingArc({ radius, progress: clamped, direction });
+  const headRadius = strokeWidth + 1;
+  const displayReady = isReady || clamped >= 1;
 
   return (
-    <div
+    <svg
       data-testid={testId}
       data-visible={visible ? "true" : "false"}
       data-direction={direction}
       data-progress-percent={String(Math.round(clamped * 100))}
+      data-ready={displayReady ? "true" : "false"}
+      data-head-angle={String(Math.round(headAngle))}
       aria-label={`${direction} ring ${Math.round(clamped * 100)} percent`}
-      className="absolute rounded-full transition-opacity duration-150"
+      className="absolute inset-0 transition-opacity duration-150"
+      viewBox="0 0 240 240"
       style={{
-        inset,
         opacity: visible ? 1 : 0,
-        padding: 6,
-        background: "rgba(255,255,255,0.06)",
-        boxShadow: visible ? `0 0 24px ${color}55` : undefined,
       }}
     >
-      <div
-        className="h-full w-full rounded-full"
-        style={{
-          background: `conic-gradient(${color} ${angle}deg, rgba(255,255,255,0.08) ${angle}deg 360deg)`,
-          transform: direction === "counter-clockwise" ? "scaleX(-1)" : undefined,
-        }}
+      <circle
+        cx="120"
+        cy="120"
+        r={radius}
+        fill="none"
+        stroke="rgba(255,255,255,0.12)"
+        strokeWidth={strokeWidth}
       />
-      <div
-        className="absolute rounded-full"
-        style={{
-          inset: 6,
-          background: "var(--color-navy-bg)",
-        }}
-      />
-    </div>
+      {displayReady ? (
+        <circle
+          cx="120"
+          cy="120"
+          r={radius}
+          fill="none"
+          stroke={color}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+        />
+      ) : arcPath ? (
+        <path
+          d={arcPath}
+          fill="none"
+          stroke={color}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+        />
+      ) : null}
+      {visible ? (
+        <>
+          <circle
+            cx={head.x}
+            cy={head.y}
+            r={headRadius + 6}
+            fill={color}
+            opacity="0.3"
+            style={{ filter: "blur(10px)" }}
+          />
+          <circle
+            cx={head.x}
+            cy={head.y}
+            r={headRadius}
+            fill={color}
+            stroke="rgba(255,255,255,0.75)"
+            strokeWidth="1.5"
+          />
+        </>
+      ) : null}
+    </svg>
   );
 }
 
@@ -460,9 +507,16 @@ function CopyMatchPage() {
     isLocallyReady ? 1 : 0,
   );
   const isMatchOpen = state?.activeMatch?.status === "success_open";
-  const showSelfRing = isPressing && !isMatchOpen && Boolean(state?.focusTarget);
+  const selfReady = Boolean(state?.selfHold?.isReady || isLocallyReady);
+  const showSelfRing =
+    !isMatchOpen &&
+    Boolean(state?.focusTarget) &&
+    (isPressing || Boolean(state?.selfHold?.isVisible) || selfReady);
   const partnerRingVisible = Boolean(state?.partnerReciprocalHold?.isVisible) && !isMatchOpen;
   const partnerProgressRatio = partnerRingVisible ? state?.partnerReciprocalHold?.progressRatio ?? 0 : 0;
+  const partnerReady = Boolean(state?.partnerReciprocalHold?.isReady);
+  const selfHeadAngle = getRingHeadAngle(selfProgressRatio, "clockwise");
+  const partnerHeadAngle = getRingHeadAngle(partnerProgressRatio, "counter-clockwise");
   const estimatedServerNow = state?.serverNow ? state.serverNow + (nowMs - state.serverNow) : nowMs;
   const countdownMs = state?.focusWindow ? Math.max(0, state.focusWindow.endsAt - estimatedServerNow) : 0;
   const countdownValue = state?.focusTarget
@@ -482,6 +536,10 @@ function CopyMatchPage() {
           <div>center: {state?.focusTarget?.username ?? "none"}</div>
           <div>self_ring: {showSelfRing ? "visible" : "hidden"} / {Math.round(selfProgressRatio * 100)}%</div>
           <div>partner_ring: {partnerRingVisible ? "visible" : "hidden"} / {Math.round(partnerProgressRatio * 100)}%</div>
+          <div>self_ready: {selfReady ? "true" : "false"}</div>
+          <div>partner_ready: {partnerReady ? "true" : "false"}</div>
+          <div>self_angle: {Math.round(selfHeadAngle)}</div>
+          <div>partner_angle: {Math.round(partnerHeadAngle)}</div>
           <div>queue_suffix: {centerQueueSuffix}</div>
           <div>match: {state?.activeMatch?.status ?? "none"}</div>
         </div>
@@ -591,17 +649,21 @@ function CopyMatchPage() {
                         testId="copy-self-ring"
                         progress={showSelfRing ? selfProgressRatio : 0}
                         color="#2dd4bf"
-                        inset={0}
+                        radius={108}
+                        strokeWidth={8}
                         direction="clockwise"
                         visible={showSelfRing}
+                        isReady={selfReady}
                       />
                       <RingTrack
                         testId="copy-partner-ring"
                         progress={partnerProgressRatio}
                         color="#fb7185"
-                        inset={16}
+                        radius={92}
+                        strokeWidth={8}
                         direction="counter-clockwise"
                         visible={partnerRingVisible}
+                        isReady={partnerReady}
                       />
                       <div
                         className="absolute rounded-full border border-white/15 bg-[radial-gradient(circle_at_top,rgba(45,212,191,0.24),rgba(45,212,191,0.08)_58%,rgba(4,10,26,0.94)_100%)] shadow-[0_0_34px_rgba(45,212,191,0.24)]"
@@ -644,8 +706,8 @@ function CopyMatchPage() {
             </p>
             <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
               {partnerRingVisible
-                ? "The second ring is live because the center user is pressing you back in this same window."
-                : "Your ring fills clockwise while you hold. The reverse ring appears only when the center user reciprocates."}
+                ? "The second ring is circling in reverse because the center user is pressing you back now."
+                : "Your ring circles clockwise while you hold. The reverse ring appears only if the center user presses back."}
             </p>
           </div>
 
